@@ -1,0 +1,15 @@
+[workspace]
+resolver = "2"
+members = [
+    "voxply-desktop/src-tauri",
+    "voxply-identity",
+    "voxply-voice",
+]
+
+[workspace.dependencies]
+tokio = { version = "1", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+anyhow = "1"

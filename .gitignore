@@ -1,0 +1,10 @@
+/target
+node_modules/
+dist/
+.next/
+build/
+**/*.db
+**/*.db-shm
+**/*.db-wal
+.env
+voxply-desktop/src-tauri/gen/
