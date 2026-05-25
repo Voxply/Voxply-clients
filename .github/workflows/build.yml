@@ -15,7 +15,7 @@ jobs:
         with:
           node-version: '20'
           cache: npm
-          cache-dependency-path: voxply-desktop/package-lock.json
+          cache-dependency-path: desktop/package-lock.json
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: Install GTK/WebKit system libraries (Linux only)
@@ -32,8 +32,8 @@ jobs:
       - name: Cargo check
         run: cargo check --workspace
       - name: Install npm deps
-        working-directory: voxply-desktop
+        working-directory: desktop
         run: npm ci
       - name: TypeScript check
-        working-directory: voxply-desktop
+        working-directory: desktop
         run: npx tsc --noEmit

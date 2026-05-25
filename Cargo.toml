@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "voxply-desktop/src-tauri",
-    "voxply-voice",
+    "desktop/src-tauri",
+    "voice",
 ]
 
 [workspace.dependencies]

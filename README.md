@@ -16,7 +16,7 @@ and the [roadmap](https://github.com/Voxply/Voxply/blob/main/ROADMAP.md) for wha
 - **Rust** (src-tauri) — native commands: identity, E2E crypto, voice, HTTP
 - **ed25519-dalek** — Ed25519 keypair generation and signing
 - **BIP39** — 24-word recovery phrase
-- **voxply-voice** — audio pipeline: cpal capture, Opus codec, RNNoise denoise
+- **voice** — audio pipeline: cpal capture, Opus codec, RNNoise denoise
 - **AES-GCM + HKDF** — end-to-end encrypted direct messages
 - **WebSocket** — real-time hub events
 
@@ -26,7 +26,7 @@ Requires [Node 20+](https://nodejs.org) and the
 [Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS.
 
 ```bash
-cd voxply-desktop
+cd desktop
 npm install
 npm run tauri dev
 ```
@@ -37,7 +37,7 @@ The window opens with an "Add a hub" prompt. Paste a hub URL
 ## Building a release
 
 ```bash
-cd voxply-desktop
+cd desktop
 npm run tauri build
 # Output: src-tauri/target/release/bundle/
 ```
@@ -45,7 +45,7 @@ npm run tauri build
 ## Type checking
 
 ```bash
-cd voxply-desktop
+cd desktop
 npx tsc --noEmit    # TypeScript check
 cargo check --workspace   # Rust check
 ```
