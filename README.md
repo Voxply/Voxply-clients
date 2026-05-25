@@ -1,105 +1,86 @@
-# Voxply
+# Voxply-desktop
 
-A decentralized platform where players can hang out, talk, and play
-together. Voice chat, text messaging, federated alliances of hubs, and
-community-built games — all keypair-based identity, no central servers.
+Desktop client for the [Voxply](https://github.com/YOUR_ORG/Voxply) platform.
+Voice chat, text channels, direct messages, alliances, bots, screen share —
+all running as a native desktop app backed by a Tauri Rust layer.
 
-## Features
+Part of the Voxply project — see the
+[docs repo](https://github.com/YOUR_ORG/Voxply) for architecture,
+API spec, and roadmap.
 
-- **Channels** — every channel is **unified text + voice**: chat
-  history and voice in the same room. Categories nest channels (and
-  other categories). Drag-drop reorder, collapse/pin, search, markdown,
-  code blocks, attachments (3 MB), reactions, replies, mentions, /me
-  actions, edit/delete.
-- **Voice** — Opus over UDP with RNNoise denoise, voice activity
-  detection, push-to-talk, self-mute / self-deafen.
-- **Direct messages** — federated outbox with retry, attachments,
-  typing indicator, unread tracking, sort by activity.
-- **Alliances** — multi-hub groups. Hubs share channels, messages, and
-  reactions across the alliance via federation.
-- **Hub federation** — independent hubs peer over HTTPS + WebSocket.
-- **Identity** — Ed25519 keypair, 24-word BIP39 recovery phrase, no
-  accounts, no passwords.
-- **Roles & moderation** — custom roles with priority and permissions,
-  ban / mute / timeout / kick, channel ban, voice mute, talk power, hub
-  approval queue.
-- **Notifications** — three-state per scope (all / mentions only /
-  silent), system tray badge, OS notifications, mention sound.
-- **Themes** — Calm (default), Classic, Linear, Light.
+## Technologies
 
-## Architecture
+- **Tauri 2** — native desktop wrapper (Rust shell + system WebView)
+- **React 18** + **TypeScript** — UI layer
+- **Vite** — build tooling and dev server
+- **Rust** (src-tauri) — native commands: identity, E2E crypto, voice, HTTP
+- **ed25519-dalek** — Ed25519 keypair generation and signing
+- **BIP39** — 24-word recovery phrase
+- **voxply-voice** — audio pipeline: cpal capture, Opus codec, RNNoise denoise
+- **AES-GCM + HKDF** — end-to-end encrypted direct messages
+- **WebSocket** — real-time hub events
+
+## Repository structure
 
 ```
-server/
-├── voxply-hub/          Hub server (axum + SQLite + WebSocket + UDP voice)
-└── voxply-seed/         Discovery scaffold (not in active use)
-
-client/
-└── voxply-desktop/      Tauri + React desktop client
-
-shared/
-├── voxply-identity/     Ed25519 keypairs, signing, recovery phrases
-└── voxply-voice/        Audio pipeline (cpal + Opus + RNNoise)
+voxply-desktop/
+  src/                   React + TypeScript UI
+    components/          All UI components
+    hooks/               useVoice, useScreenShare, useReconnectBackoff
+    utils/               Formatting, audio, file helpers
+    types.ts             Wire types mirroring the hub API
+    styles.css           Design-token–based CSS
+  src-tauri/             Rust native layer (Tauri commands)
+    src/
+      lib.rs             All Tauri commands (~300 commands)
+      auth_creds.rs      Credential store
+      home_hub.rs        Home hub management
+      pairing.rs         Multi-device pairing
+voxply-identity/         Ed25519, PoW, BIP39 (shared with voxply-server)
+voxply-voice/            Audio pipeline crate
 ```
 
 ## Quick start
 
-### Hub server
+Requires [Node 20+](https://nodejs.org) and the
+[Tauri prerequisites](https://tauri.app/start/prerequisites/) for your OS.
 
 ```bash
-cargo run -p voxply-hub
-# Listens on http://0.0.0.0:3000 (HTTP) and 0.0.0.0:3001 (voice UDP).
-# Override with VOXPLY_HTTP_PORT / VOXPLY_VOICE_UDP_PORT.
-# Set VOXPLY_TLS_CERT and VOXPLY_TLS_KEY for HTTPS.
-```
-
-For a real production deployment (systemd unit, TLS, backups, upgrades),
-see [`docs/hosting.md`](docs/hosting.md).
-
-### Desktop client
-
-```bash
-cd client/voxply-desktop
+cd voxply-desktop
 npm install
 npm run tauri dev
 ```
 
-The window opens with an "Add a hub" prompt; paste your hub URL
+The window opens with an "Add a hub" prompt. Paste a hub URL
 (`http://localhost:3000` for a local dev hub) to connect.
 
-## Building
+## Building a release
 
 ```bash
-cargo build                       # all Rust crates
-cargo test                        # hub + shared crate tests
-cd client/voxply-desktop && npm run tauri build   # desktop release
+cd voxply-desktop
+npm run tauri build
+# Output: src-tauri/target/release/bundle/
 ```
 
-## Documentation
+## Type checking
 
-- [`docs/`](docs/README.md) — architecture, federation, identity,
-  alliances, voice, data model, client structure, decisions, threat
-  model, and glossary. Start at [`docs/README.md`](docs/README.md).
-- [`ROADMAP.md`](ROADMAP.md) — what's next, known issues, undesigned
-  wishlist, and explicit "won't do" decisions.
+```bash
+cd voxply-desktop
+npx tsc --noEmit    # TypeScript check
+cargo check --workspace   # Rust check
+```
 
 ## Built with AI assistance
 
 This project was built with substantial help from
-[Claude](https://claude.ai) (Anthropic's AI assistant). I direct the
-product, architectural choices, and tradeoffs; Claude drafts most of
-the code, tests, and documentation, which I then review and accept,
-adjust, or rewrite.
+[Claude](https://claude.ai) (Anthropic's AI assistant). The product
+owner directs architecture, features, and tradeoffs; Claude drafts
+most of the code, tests, and documentation, which is then reviewed,
+adjusted, and accepted.
 
 Calling this out for transparency — it's not a fully hand-written
-project, and pretending otherwise wouldn't be honest.
-
-The wiki at [`docs/`](docs/README.md) is intentionally LLM-friendly
-(file:line pointers, navigable index, "why" over "what") so Claude
-stays useful as the codebase grows.
+codebase, and pretending otherwise wouldn't be honest.
 
 ## License
 
-[GNU Affero General Public License v3.0](LICENSE). Network use of a
-modified version requires offering the corresponding source to those
-users — important for a federated platform like this.
+[GNU Affero General Public License v3.0](LICENSE).
