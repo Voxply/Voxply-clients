@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import type { User } from "../types";
 import { Avatar } from "./Avatar";
+import { formatPubkey } from "../utils/format";
 
 export function UserListGrouped({
   users,
@@ -23,7 +24,7 @@ export function UserListGrouped({
       )
     : users;
 
-  const bots = matched.filter((u) => u.is_bot);
+  const bots = matched.filter((u) => u.is_bot && !u.is_webhook);
   const humans = matched.filter((u) => !u.is_bot);
 
   // Online first, then offline. Within each, bucket by group_role (the name of
@@ -134,12 +135,13 @@ export function UserListGrouped({
             className="member-section-header"
             onClick={() => setBotsExpanded((prev) => !prev)}
           >
-            BOTS — {bots.length}
+            {botsExpanded ? "▼" : "▶"} Bots — {bots.length}
           </button>
           {botsExpanded && bots.map((bot) => (
             <div key={bot.public_key} className="member-list-item">
-              <span className="member-name">{bot.display_name ?? "Bot"}</span>
-              <span className="bot-badge">BOT</span>
+              <Avatar src={bot.avatar} name={bot.display_name ?? bot.public_key} size={22} />
+              <span className="member-name">{bot.display_name ?? formatPubkey(bot.public_key)}</span>
+              <span className="bot-badge" style={{ fontSize: "10px", padding: "0 4px" }}>BOT</span>
             </div>
           ))}
         </div>

@@ -12,6 +12,8 @@ import type {
   VoiceParticipant,
   ActiveStream,
 } from "../types";
+import { MessageEmbeds } from "./MessageEmbeds";
+import { MessageComponents } from "./MessageComponents";
 import { ScreenShareViewer } from "./ScreenShareViewer";
 import type { ScreenShareViewerRef } from "./ScreenShareViewer";
 import {
@@ -152,6 +154,13 @@ export function ContentArea({
 }: Props) {
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
+
+  const activeHub = hubs.find((h) => h.hub_id === activeHubId);
+
+  async function handleComponentInteract(messageId: string, customId: string, values: string[]) {
+    // TODO: wire invoke("send_component_interaction", { hubUrl: activeHub?.url, messageId, customId, values }) when backend ready
+    console.log("component interaction", messageId, customId, values);
+  }
 
   function handleSlashInputChange(value: string) {
     onInputTextChange(value);
@@ -466,6 +475,7 @@ export function ContentArea({
                   const senderUser = users.find((u) => u.public_key === m.sender);
                   const senderLabel = senderUser?.display_name || m.sender_name || formatPubkey(m.sender);
                   const isMentioned = m.sender !== publicKey && mentionsName(m.content, myDisplayName);
+                  const isEphemeral = !!m.visible_to_pubkey && m.visible_to_pubkey === publicKey;
                   const actionText = meAction(m.content);
                   if (actionText !== null) {
                     return (
@@ -477,7 +487,7 @@ export function ContentArea({
                         )}
                         <div
                           id={`msg-${m.id}`}
-                          className={`message message-action ${isMentioned ? "message-mentioned" : ""}`}
+                          className={`message message-action ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
                         >
                           <span className="action-asterisk">*</span>
                           <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
@@ -486,6 +496,9 @@ export function ContentArea({
                           <span className="action-text">
                             <MessageContent content={actionText} knownNames={knownDisplayNames} myName={myDisplayName} />
                           </span>
+                          {isEphemeral && (
+                            <div className="message-ephemeral-label">Only you can see this</div>
+                          )}
                         </div>
                       </React.Fragment>
                     );
@@ -499,7 +512,7 @@ export function ContentArea({
                       )}
                       <div
                         id={`msg-${m.id}`}
-                        className={`message ${isMentioned ? "message-mentioned" : ""}`}
+                        className={`message ${isMentioned ? "message-mentioned" : ""} ${isEphemeral ? "message-ephemeral" : ""}`}
                       >
                         {m.reply_to && (
                           <div
@@ -518,6 +531,12 @@ export function ContentArea({
                         <span className="message-sender" style={{ color: colorForKey(m.sender) }}>
                           {senderLabel}
                         </span>
+                        {senderUser?.is_bot && !senderUser?.is_webhook && (
+                          <span className="bot-badge">BOT</span>
+                        )}
+                        {senderUser?.is_webhook && (
+                          <span className="bot-badge bot-badge--app">APP</span>
+                        )}
                         {isEditing ? (
                           <span className="message-edit">
                             <input
@@ -594,6 +613,20 @@ export function ContentArea({
                                 reactions={m.reactions}
                                 onToggle={(emoji) => onToggleReaction(m.id, emoji)}
                               />
+                            )}
+                            {m.embeds && m.embeds.length > 0 && (
+                              <MessageEmbeds embeds={m.embeds} />
+                            )}
+                            {m.components && m.components.length > 0 && (
+                              <MessageComponents
+                                rows={m.components}
+                                messageId={m.id}
+                                hubUrl={activeHub?.hub_url ?? ""}
+                                onInteract={handleComponentInteract}
+                              />
+                            )}
+                            {isEphemeral && (
+                              <div className="message-ephemeral-label">Only you can see this</div>
                             )}
                           </>
                         )}
