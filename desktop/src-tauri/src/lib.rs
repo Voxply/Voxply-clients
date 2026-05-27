@@ -45,6 +45,7 @@ enum WsCommand {
     VoiceSpeaking { channel_id: String, speaking: bool },
     Typing { channel_id: String, typing: bool },
     DmTyping { conversation_id: String, typing: bool },
+    Raw(String),
 }
 
 struct PendingDeepLink {
@@ -1114,6 +1115,12 @@ async fn spawn_ws_task(
                                 "conversation_id": conversation_id,
                                 "typing": typing,
                             })
+                        }
+                        WsCommand::Raw(raw_json) => {
+                            if ws_tx.send(WsMessage::Text(raw_json.into())).await.is_err() {
+                                break;
+                            }
+                            continue;
                         }
                     };
                     if ws_tx.send(WsMessage::Text(json.to_string().into())).await.is_err() {
@@ -4123,6 +4130,293 @@ async fn admin_get_bot_detail(
 }
 
 // =============================================================================
+// Feature: Component interactions (bot buttons / selects)
+// =============================================================================
+
+#[tauri::command]
+async fn send_component_interaction(
+    hub_url: String,
+    message_id: String,
+    custom_id: String,
+    values: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let hubs = state.hubs.lock().unwrap();
+    let session = hubs
+        .values()
+        .find(|s| s.hub_url.trim_end_matches('/') == hub_url.trim_end_matches('/'))
+        .ok_or_else(|| format!("No active session for hub: {hub_url}"))?;
+    let tx = session.ws_tx.clone();
+    drop(hubs);
+    let payload = serde_json::json!({
+        "type": "component_interaction",
+        "message_id": message_id,
+        "custom_id": custom_id,
+        "values": values,
+    });
+    tx.send(WsCommand::Raw(payload.to_string()))
+        .map_err(|_| "WS closed".to_string())
+}
+
+// =============================================================================
+// Feature: Bot profile (public card)
+// =============================================================================
+
+#[derive(Serialize, Deserialize)]
+struct BotCommandDef {
+    name: String,
+    description: String,
+}
+
+#[derive(Serialize, Deserialize)]
+struct BotProfileResult {
+    pubkey: String,
+    name: String,
+    avatar_url: Option<String>,
+    description: Option<String>,
+    commands: Vec<BotCommandDef>,
+}
+
+#[tauri::command]
+async fn get_bot_profile(
+    hub_url: String,
+    pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<BotProfileResult, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/bots/{pubkey}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+// =============================================================================
+// Feature: External bots
+// =============================================================================
+
+#[derive(Serialize, Deserialize, Clone)]
+struct ExternalBotRow {
+    public_key: String,
+    display_name: Option<String>,
+    local_note: Option<String>,
+    approval_status: String,
+    last_seen_at: Option<i64>,
+}
+
+#[derive(Serialize, Deserialize)]
+struct ExternalBotInviteResult {
+    bot_invite_token: String,
+    pubkey: String,
+}
+
+#[tauri::command]
+async fn admin_list_external_bots(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<ExternalBotRow>, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/admin/bots/external"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+#[tauri::command]
+async fn admin_add_external_bot(
+    hub_url: String,
+    pubkey: String,
+    local_note: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<ExternalBotInviteResult, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .post(format!("{base}/admin/bots/external"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "pubkey": pubkey, "local_note": local_note }))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+#[tauri::command]
+async fn admin_remove_external_bot(
+    hub_url: String,
+    pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .delete(format!("{base}/admin/bots/external/{pubkey}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn admin_set_bot_channel_scope(
+    hub_url: String,
+    pubkey: String,
+    channel_ids: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .put(format!("{base}/admin/bots/{pubkey}/channels"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "channel_ids": channel_ids }))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+// =============================================================================
+// Feature: Incoming Webhooks
+// =============================================================================
+
+#[derive(Serialize, Deserialize, Clone)]
+struct WebhookInfo {
+    id: String,
+    display_name: String,
+    channel_id: String,
+    channel_name: Option<String>,
+    webhook_url: String,
+    created_by: String,
+    created_at: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct WebhookCreatedResult {
+    id: String,
+    webhook_url: String,
+}
+
+#[tauri::command]
+async fn admin_list_webhooks(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<WebhookInfo>, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/admin/webhooks"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+#[tauri::command]
+async fn admin_create_webhook(
+    hub_url: String,
+    channel_id: String,
+    display_name: String,
+    avatar_url: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<WebhookCreatedResult, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .post(format!("{base}/admin/webhooks"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "channel_id": channel_id,
+            "display_name": display_name,
+            "avatar_url": avatar_url,
+        }))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+#[tauri::command]
+async fn admin_regenerate_webhook(
+    hub_url: String,
+    webhook_id: String,
+    state: State<'_, AppState>,
+) -> Result<WebhookCreatedResult, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .patch(format!("{base}/admin/webhooks/{webhook_id}"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+#[tauri::command]
+async fn admin_delete_webhook(
+    hub_url: String,
+    webhook_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .delete(format!("{base}/admin/webhooks/{webhook_id}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+// =============================================================================
 // Feature: Security Level Lobby
 // =============================================================================
 
@@ -4754,6 +5048,16 @@ pub fn run() {
             admin_delete_bot,
             admin_set_bot_webhook,
             admin_get_bot_detail,
+            send_component_interaction,
+            get_bot_profile,
+            admin_list_external_bots,
+            admin_add_external_bot,
+            admin_remove_external_bot,
+            admin_set_bot_channel_scope,
+            admin_list_webhooks,
+            admin_create_webhook,
+            admin_regenerate_webhook,
+            admin_delete_webhook,
             lobby_status,
             lobby_submit_proof,
             lobby_get_welcome,

@@ -18,6 +18,8 @@ import { AlliancesSection } from "./AlliancesSection";
 import { AllianceInvitesSection } from "./AllianceInvitesSection";
 import { HubIconsSection } from "./HubIconsSection";
 import { BotAdminSection } from "./BotAdminSection";
+import { ExternalBotSection } from "./ExternalBotSection";
+import { WebhooksSection } from "./WebhooksSection";
 import { SurveyAdminSection } from "./SurveyAdminSection";
 import { LobbySettingsSection } from "./LobbySettingsSection";
 import { ChallengeSettingsSection } from "./ChallengeSettingsSection";
@@ -35,7 +37,8 @@ export type HubAdminTab =
   | "bots"
   | "survey"
   | "lobby"
-  | "challenge";
+  | "challenge"
+  | "integrations";
 
 export interface HubAdminPageProps {
   tab: HubAdminTab;
@@ -156,6 +159,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
     { id: "alliance-invites", label: "Alliance invites" },
     { id: "icons", label: "Icons" },
     { id: "bots", label: "Bots" },
+    { id: "integrations", label: "Integrations" },
     { id: "survey", label: "Onboarding" },
     { id: "lobby", label: "Lobby" },
     { id: "challenge", label: "Challenge" },
@@ -584,9 +588,21 @@ export function HubAdminPage(props: HubAdminPageProps) {
           </section>
         )}
         {props.tab === "bots" && (
-          <BotAdminSection
+          <>
+            <BotAdminSection
+              hubUrl={props.activeHubUrl}
+              myPubkey={props.myPubkey}
+            />
+            <ExternalBotSection
+              hubUrl={props.activeHubUrl}
+              channels={props.channels}
+            />
+          </>
+        )}
+        {props.tab === "integrations" && (
+          <WebhooksSection
             hubUrl={props.activeHubUrl}
-            myPubkey={props.myPubkey}
+            channels={props.channels}
           />
         )}
         {props.tab === "survey" && (
