@@ -12,6 +12,9 @@ interface Props {
 export function MessageComponents({ rows, messageId, hubUrl, onInteract }: Props) {
   const [disabledIds, setDisabledIds] = useState<Set<string>>(new Set());
 
+  // TODO: Android has no send_component_interaction Tauri command — invoke fails
+  // silently and the button re-enables after the timeout. Wire a platform HTTP
+  // call here once the hub interaction endpoint is implemented.
   const fireInteraction = useCallback(
     async (customId: string, values: string[]) => {
       setDisabledIds((prev) => new Set(prev).add(customId));
