@@ -1,4 +1,5 @@
 import React from "react";
+import { useTranslation } from "react-i18next";
 import { FocusTrap } from "./FocusTrap";
 
 type HubPreview =
@@ -18,11 +19,12 @@ interface Props {
 }
 
 export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, loading, error, onAdd, onClose }: Props) {
+  const { t } = useTranslation();
   return (
     <div className="modal-overlay" onClick={onClose}>
       <FocusTrap>
       <div className="modal" onClick={(e) => e.stopPropagation()}>
-        <h3>Add Hub</h3>
+        <h3>{t("hub.add.button")}</h3>
         <p className="muted" style={{ marginBottom: "var(--space-3)" }}>
           Paste a hub address or a <code>voxply://</code> invite link.
         </p>
@@ -76,9 +78,9 @@ export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, loading, error
           </div>
         )}
         <div className="modal-actions">
-          <button onClick={onClose} className="btn-secondary">Cancel</button>
+          <button onClick={onClose} className="btn-secondary">{t("modal.cancel")}</button>
           <button onClick={onAdd} disabled={loading}>
-            {loading ? "Connecting..." : "Connect"}
+            {loading ? t("hub.connecting") : t("hub.add.button")}
           </button>
         </div>
         {error && <div className="error">{error}</div>}

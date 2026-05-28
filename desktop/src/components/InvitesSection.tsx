@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { InviteInfo } from "../types";
 import { EXPIRY_OPTIONS } from "../constants";
 import { formatRelative } from "../utils/format";
@@ -14,6 +15,7 @@ export function InvitesSection({
   onCreate: (maxUses: number | null, expiresInSeconds: number | null) => void;
   onRevoke: (code: string) => void;
 }) {
+  const { t } = useTranslation();
   const [maxUsesStr, setMaxUsesStr] = useState("");
   const [expiryIdx, setExpiryIdx] = useState(0);
   const [copied, setCopied] = useState<string | null>(null);
@@ -38,15 +40,15 @@ export function InvitesSection({
 
   return (
     <section>
-      <h1>Invites — {invites.length}</h1>
+      <h1>{t("invites.title", { count: invites.length })}</h1>
       <div className="role-editor">
-        <h3>Create invite</h3>
+        <h3>{t("invites.create.title")}</h3>
         <div className="settings-row">
           <input
             type="number"
             value={maxUsesStr}
             onChange={(e) => setMaxUsesStr(e.target.value)}
-            placeholder="Max uses (blank = unlimited)"
+            placeholder={t("invites.create.max_uses_placeholder")}
             min={1}
           />
           <select
@@ -55,25 +57,25 @@ export function InvitesSection({
           >
             {EXPIRY_OPTIONS.map((o, i) => (
               <option key={o.label} value={i}>
-                Expires: {o.label}
+                {t("invites.create.expires", { label: o.label })}
               </option>
             ))}
           </select>
-          <button onClick={submit}>Create</button>
+          <button onClick={submit}>{t("invites.create.button")}</button>
         </div>
       </div>
 
       {invites.length === 0 ? (
-        <p className="muted">No invites yet.</p>
+        <p className="muted">{t("invites.empty")}</p>
       ) : (
         <table className="members-table">
           <thead>
             <tr>
-              <th>Code</th>
-              <th>Uses</th>
-              <th>Expires</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th>{t("invites.col.code")}</th>
+              <th>{t("invites.col.uses")}</th>
+              <th>{t("invites.col.expires")}</th>
+              <th>{t("invites.col.created")}</th>
+              <th>{t("invites.col.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -89,7 +91,7 @@ export function InvitesSection({
                 <td>
                   {i.expires_at
                     ? new Date(i.expires_at * 1000).toLocaleString()
-                    : "Never"}
+                    : t("invites.expires.never")}
                 </td>
                 <td>{formatRelative(i.created_at)}</td>
                 <td>
@@ -97,13 +99,13 @@ export function InvitesSection({
                     className="btn-small"
                     onClick={() => copyLink(i.code)}
                   >
-                    {copied === i.code ? "Copied" : "Copy link"}
+                    {copied === i.code ? t("invites.copied") : t("invites.copy")}
                   </button>
                   <button
                     className="btn-small btn-secondary-small"
                     onClick={() => onRevoke(i.code)}
                   >
-                    Revoke
+                    {t("invites.revoke")}
                   </button>
                 </td>
               </tr>

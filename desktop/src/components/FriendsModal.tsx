@@ -1,4 +1,5 @@
 import React, { useEffect } from "react";
+import { useTranslation } from "react-i18next";
 import type { Friend } from "../types";
 import { FocusTrap } from "./FocusTrap";
 
@@ -21,6 +22,8 @@ export function FriendsModal({
   requestKey, onRequestKeyChange, requestHubUrl, onRequestHubUrlChange,
   onSendRequest, onAcceptFriend, onMessage, onRemoveFriend, onClose,
 }: Props) {
+  const { t } = useTranslation();
+
   useEffect(() => {
     function onKey(e: KeyboardEvent) {
       if (e.key === "Escape") onClose();
@@ -33,16 +36,16 @@ export function FriendsModal({
     <div className="modal-overlay" onClick={onClose}>
       <FocusTrap>
       <div className="modal modal-wide" onClick={(e) => e.stopPropagation()}>
-        <h3>Friends</h3>
+        <h3>{t("friends.title")}</h3>
 
         <div className="settings-section">
-          <label className="settings-label">Add friend</label>
+          <label className="settings-label">{t("friends.add.label")}</label>
           <div className="settings-row">
             <input
               type="text"
               value={requestKey}
               onChange={(e) => onRequestKeyChange(e.target.value)}
-              placeholder="Public key (paste here)"
+              placeholder={t("friends.add.pubkey_placeholder")}
               onKeyDown={(e) => { if (e.key === "Enter") onSendRequest(); }}
             />
           </div>
@@ -51,22 +54,20 @@ export function FriendsModal({
               type="text"
               value={requestHubUrl}
               onChange={(e) => onRequestHubUrlChange(e.target.value)}
-              placeholder="Hub URL (optional — leave blank if friend is on this hub)"
+              placeholder={t("friends.add.hub_placeholder")}
               onKeyDown={(e) => { if (e.key === "Enter") onSendRequest(); }}
             />
-            <button onClick={onSendRequest}>Send</button>
+            <button onClick={onSendRequest}>{t("modal.send")}</button>
           </div>
           <p className="muted" style={{ marginTop: "6px", fontSize: "12px" }}>
-            Same-hub friends require the other person to accept your
-            request. Cross-hub friends (with a Hub URL) are added
-            immediately as a one-sided address book entry.
+            {t("friends.add.hint")}
           </p>
         </div>
 
         {pendingFriends.length > 0 && (
           <div className="settings-section">
             <label className="settings-label">
-              Pending requests ({pendingFriends.length})
+              {t("friends.pending.label", { count: pendingFriends.length })}
             </label>
             <ul className="friend-list">
               {pendingFriends.map((f) => (
@@ -74,7 +75,7 @@ export function FriendsModal({
                   <span className="friend-name">
                     {f.display_name || f.public_key.slice(0, 16)}
                   </span>
-                  <button onClick={() => onAcceptFriend(f.public_key)}>Accept</button>
+                  <button onClick={() => onAcceptFriend(f.public_key)}>{t("friends.pending.accept")}</button>
                 </li>
               ))}
             </ul>
@@ -82,9 +83,9 @@ export function FriendsModal({
         )}
 
         <div className="settings-section">
-          <label className="settings-label">Friends ({friends.length})</label>
+          <label className="settings-label">{t("friends.list.label", { count: friends.length })}</label>
           {friends.length === 0 ? (
-            <p className="muted">No friends yet</p>
+            <p className="muted">{t("friends.empty")}</p>
           ) : (
             <ul className="friend-list">
               {friends.map((f) => (
@@ -102,9 +103,9 @@ export function FriendsModal({
                     )}
                   </span>
                   <div style={{ display: "flex", gap: "6px" }}>
-                    <button onClick={() => onMessage(f.public_key, f.hub_url)}>Message</button>
+                    <button onClick={() => onMessage(f.public_key, f.hub_url)}>{t("friends.message")}</button>
                     <button onClick={() => onRemoveFriend(f.public_key)} className="btn-secondary">
-                      Remove
+                      {t("friends.remove")}
                     </button>
                   </div>
                 </li>
@@ -114,7 +115,7 @@ export function FriendsModal({
         </div>
 
         <div className="modal-actions">
-          <button onClick={onClose}>Close</button>
+          <button onClick={onClose}>{t("modal.close")}</button>
         </div>
       </div>
       </FocusTrap>

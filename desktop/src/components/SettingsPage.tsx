@@ -67,7 +67,7 @@ export interface SettingsPageProps {
 }
 
 export function SettingsPage(props: SettingsPageProps) {
-  const { i18n } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [publicProfileEnabled, setPublicProfileEnabled] = useState(false);
   const [publicHubIds, setPublicHubIds] = useState<Set<string>>(new Set());
   const [saveStatus, setSaveStatus] = useState<"idle" | "saved" | string>("idle");
@@ -99,37 +99,37 @@ export function SettingsPage(props: SettingsPageProps) {
   }
 
   const tabs: { id: SettingsTab; label: string }[] = [
-    { id: "profile", label: "Profile" },
-    { id: "account", label: "Account" },
-    { id: "appearance", label: "Appearance" },
-    { id: "voice", label: "Voice & Video" },
-    { id: "security", label: "Security" },
-    { id: "devices", label: "Devices" },
-    { id: "about", label: "About" },
+    { id: "profile", label: t("settings.tabs.profile") },
+    { id: "account", label: t("settings.tabs.account") },
+    { id: "appearance", label: t("settings.tabs.appearance") },
+    { id: "voice", label: t("settings.tabs.voice") },
+    { id: "security", label: t("settings.tabs.security") },
+    { id: "devices", label: t("settings.tabs.devices") },
+    { id: "about", label: t("settings.tabs.about") },
   ];
 
   return (
     <div className="settings-page">
       <aside className="settings-nav">
-        <h2>Settings</h2>
+        <h2>{t("settings.title")}</h2>
         <ul>
-          {tabs.map((t) => (
-            <li key={t.id}>
+          {tabs.map((tab) => (
+            <li key={tab.id}>
               <button
-                className={`settings-nav-item ${props.tab === t.id ? "active" : ""}`}
-                onClick={() => props.onTab(t.id)}
+                className={`settings-nav-item ${props.tab === tab.id ? "active" : ""}`}
+                onClick={() => props.onTab(tab.id)}
               >
-                {t.label}
+                {tab.label}
               </button>
             </li>
           ))}
         </ul>
         <button className="settings-nav-close" onClick={props.onClose}>
-          Close (ESC)
+          {t("settings.close")}
         </button>
       </aside>
       <main className="settings-content">
-        <button className="settings-close-x" onClick={props.onClose} title="Close">
+        <button className="settings-close-x" onClick={props.onClose} title={t("modal.close")}>
           ×
         </button>
         {props.tab === "profile" && (
@@ -147,45 +147,41 @@ export function SettingsPage(props: SettingsPageProps) {
         )}
         {props.tab === "account" && (
           <section>
-            <h1>Account</h1>
+            <h1>{t("settings.tabs.account")}</h1>
             <div className="settings-section">
-              <label className="settings-label">Your public key</label>
+              <label className="settings-label">{t("settings.account.pubkey.label")}</label>
               <p className="muted">
-                Your unique identity. Share this with someone to send you a
-                friend request. Same key works on every hub.
+                {t("settings.account.pubkey.hint")}
               </p>
               <div className="settings-row">
                 <code className="pubkey-display" title={props.publicKey ?? ""}>
                   {formatPubkey(props.publicKey)}
                 </code>
                 <button onClick={props.onCopyKey}>
-                  {props.copiedKey ? "Copied" : "Copy full key"}
+                  {props.copiedKey ? t("settings.account.pubkey.copied") : t("settings.account.pubkey.copy")}
                 </button>
               </div>
             </div>
             <div className="settings-section">
-              <label className="settings-label">Local data</label>
+              <label className="settings-label">{t("settings.account.local_data.label")}</label>
               <p className="muted">
-                Wipes per-device preferences (unread, mutes, pins, voice
-                settings, recents). Your identity and the list of saved hubs
-                are kept — use Restore from recovery phrase or Leave hub for
-                those.
+                {t("settings.account.local_data.hint")}
               </p>
               <button
                 className="btn-secondary"
                 onClick={props.onClearLocalData}
               >
-                Clear local data…
+                {t("settings.account.local_data.button")}
               </button>
             </div>
             <div className="settings-section">
-              <label className="settings-label">Public hub profile</label>
+              <label className="settings-label">{t("settings.account.public_profile.label")}</label>
               <p className="muted">
-                Let people see which hubs you're on. Visible to anyone who views your profile.
+                {t("settings.account.public_profile.hint")}
               </p>
               {props.hubs.length === 0 ? (
                 <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-                  Join a hub first to configure your public profile.
+                  {t("settings.account.public_profile.join_first")}
                 </p>
               ) : (
                 <>
@@ -195,7 +191,7 @@ export function SettingsPage(props: SettingsPageProps) {
                       checked={publicProfileEnabled}
                       onChange={(e) => setPublicProfileEnabled(e.target.checked)}
                     />
-                    Make my hub list public
+                    {t("settings.account.public_profile.make_public")}
                   </label>
                   {publicProfileEnabled && (
                     <div style={{ marginTop: "8px" }}>
@@ -225,17 +221,17 @@ export function SettingsPage(props: SettingsPageProps) {
                       className="btn-secondary"
                       onClick={handleSavePublicProfile}
                       disabled={!props.hasActiveHub}
-                      title={!props.hasActiveHub ? "Switch to a hub to publish your profile" : undefined}
+                      title={!props.hasActiveHub ? t("settings.account.public_profile.switch_hub") : undefined}
                     >
-                      Save
+                      {t("settings.account.public_profile.save")}
                     </button>
                     {!props.hasActiveHub && (
                       <span className="muted" style={{ fontSize: "var(--text-xs)" }}>
-                        Select an active hub to publish
+                        {t("settings.account.public_profile.select_hub")}
                       </span>
                     )}
                     {props.hasActiveHub && saveStatus === "saved" && (
-                      <span className="muted">Saved</span>
+                      <span className="muted">{t("settings.account.public_profile.saved")}</span>
                     )}
                     {props.hasActiveHub && saveStatus !== "idle" && saveStatus !== "saved" && (
                       <span style={{ color: "var(--color-error, red)" }}>{saveStatus}</span>
@@ -248,17 +244,16 @@ export function SettingsPage(props: SettingsPageProps) {
         )}
         {props.tab === "appearance" && (
           <section>
-            <h1>Appearance</h1>
+            <h1>{t("settings.tabs.appearance")}</h1>
             <div className="settings-section">
-              <label className="settings-label">Theme</label>
+              <label className="settings-label">{t("settings.theme.label")}</label>
               <p className="muted">
-                How Voxply looks. Pick whichever feels right — you can change
-                it any time.
+                {t("settings.theme.hint")}
               </p>
               <ThemePicker value={props.theme} onChange={props.onThemeChange} />
             </div>
             <div className="settings-section">
-              <label className="settings-label">Language</label>
+              <label className="settings-label">{t("settings.language.label")}</label>
               <div className="settings-row">
                 <select value={i18n.language} onChange={e => {
                   i18n.changeLanguage(e.target.value);
@@ -275,28 +270,28 @@ export function SettingsPage(props: SettingsPageProps) {
         )}
         {props.tab === "voice" && (
           <section>
-            <h1>Voice & Video</h1>
+            <h1>{t("settings.tabs.voice")}</h1>
             <div className="settings-section">
               <div className="voice-devices-row">
                 <div>
-                  <label className="settings-label">Microphone</label>
+                  <label className="settings-label">{t("settings.voice.microphone")}</label>
                   <select
                     value={props.voiceInputDevice}
                     onChange={(e) => props.onInputDeviceChange(e.target.value)}
                   >
-                    <option value="">System default</option>
+                    <option value="">{t("settings.voice.system_default")}</option>
                     {props.audioInputs.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
                   </select>
                 </div>
                 <div>
-                  <label className="settings-label">Speaker</label>
+                  <label className="settings-label">{t("settings.voice.speaker")}</label>
                   <select
                     value={props.voiceOutputDevice}
                     onChange={(e) => props.onOutputDeviceChange(e.target.value)}
                   >
-                    <option value="">System default</option>
+                    <option value="">{t("settings.voice.system_default")}</option>
                     {props.audioOutputs.map((d) => (
                       <option key={d} value={d}>{d}</option>
                     ))}
@@ -306,12 +301,10 @@ export function SettingsPage(props: SettingsPageProps) {
             </div>
             <div className="settings-section">
               <label className="settings-label">
-                Mic sensitivity — threshold {props.vadThreshold.toFixed(3)}
+                {t("settings.voice.sensitivity.label", { value: props.vadThreshold.toFixed(3) })}
               </label>
               <p className="muted">
-                Drag the marker. Voice is detected when the green bar crosses
-                it. Fill animates only while you're in voice or running a mic
-                test. Changes apply on the next voice channel you join.
+                {t("settings.voice.sensitivity.hint")}
               </p>
               <MicLevelMeter
                 level={props.micLevel}
@@ -320,18 +313,17 @@ export function SettingsPage(props: SettingsPageProps) {
               />
               <div className="voice-mic-test">
                 <button onClick={props.onToggleMicTest} className="btn-secondary">
-                  {props.micTesting ? "Stop test" : "Start mic test"}
+                  {props.micTesting ? t("settings.voice.mic_test.stop") : t("settings.voice.mic_test.start")}
                 </button>
                 <span className="muted voice-mic-test-hint">
-                  Plays your mic back through your speaker. Use headphones to avoid feedback.
+                  {t("settings.voice.mic_test.hint")}
                 </span>
               </div>
             </div>
             <div className="settings-section">
-              <label className="settings-label">Activation mode</label>
+              <label className="settings-label">{t("settings.voice.mode.label")}</label>
               <p className="muted">
-                Voice activity (VAD) opens the mic when it detects speech.
-                Push-to-talk keeps it muted until you hold the bound key.
+                {t("settings.voice.mode.hint")}
               </p>
               <div className="settings-row">
                 <label className="checkbox-label">
@@ -341,7 +333,7 @@ export function SettingsPage(props: SettingsPageProps) {
                     checked={props.voiceMode === "vad"}
                     onChange={() => props.onVoiceModeChange("vad")}
                   />
-                  Voice activity (VAD)
+                  {t("settings.voice.mode.vad")}
                 </label>
                 <label className="checkbox-label">
                   <input
@@ -350,7 +342,7 @@ export function SettingsPage(props: SettingsPageProps) {
                     checked={props.voiceMode === "ptt"}
                     onChange={() => props.onVoiceModeChange("ptt")}
                   />
-                  Push-to-talk
+                  {t("settings.voice.mode.ptt")}
                 </label>
               </div>
               {props.voiceMode === "ptt" && (
@@ -361,10 +353,9 @@ export function SettingsPage(props: SettingsPageProps) {
               )}
             </div>
             <div className="settings-section">
-              <label className="settings-label">Notification sound</label>
+              <label className="settings-label">{t("settings.voice.notify_sound.label")}</label>
               <p className="muted">
-                Plays a short sound when you receive a notification — mentions,
-                replies, or activity in channels you follow.
+                {t("settings.voice.notify_sound.hint")}
               </p>
               <label className="checkbox-label">
                 <input
@@ -372,26 +363,24 @@ export function SettingsPage(props: SettingsPageProps) {
                   checked={props.mentionPingEnabled}
                   onChange={(e) => props.onMentionPingChange(e.target.checked)}
                 />
-                Play notification sound
+                {t("settings.voice.notify_sound.enable")}
               </label>
             </div>
           </section>
         )}
         {props.tab === "security" && (
           <section>
-            <h1>Security</h1>
+            <h1>{t("settings.tabs.security")}</h1>
             <div className="settings-section">
-              <label className="settings-label">Recovery phrase</label>
+              <label className="settings-label">{t("settings.security.recovery.label")}</label>
               <p className="muted">
-                24 words you can use to restore your identity. Write them down
-                and keep them safe — anyone with these words can impersonate
-                you.
+                {t("settings.security.recovery.hint")}
               </p>
               {props.recoveryPhrase ? (
                 <div className="recovery-phrase">{props.recoveryPhrase}</div>
               ) : (
                 <button onClick={props.onShowRecovery} className="btn-secondary">
-                  Reveal recovery phrase
+                  {t("settings.security.recovery.reveal")}
                 </button>
               )}
             </div>
@@ -400,26 +389,24 @@ export function SettingsPage(props: SettingsPageProps) {
         )}
         {props.tab === "devices" && (
           <section>
-            <h1>Devices</h1>
-            <h2>Home Hubs</h2>
+            <h1>{t("settings.tabs.devices")}</h1>
+            <h2>{t("settings.devices.home_hubs.title")}</h2>
             <p className="muted">
-              These hubs store your device list, DMs, and preferences. DMs are
-              delivered to each hub in order.
+              {t("settings.devices.home_hubs.hint")}
             </p>
             <HomeHubSection hubs={props.hubs} />
-            <h2>Device Pairing</h2>
+            <h2>{t("settings.devices.pairing.title")}</h2>
             <p className="muted">
-              Link this device to your identity on another machine, or allow a
-              new device to join using your existing identity.
+              {t("settings.devices.pairing.hint")}
             </p>
             <PairingSection hubs={props.hubs} />
           </section>
         )}
         {props.tab === "about" && (
           <section>
-            <h1>About</h1>
+            <h1>{t("settings.tabs.about")}</h1>
             <p className="muted">
-              Voxply — decentralized voice chat + community platform.
+              {t("settings.about.description")}
             </p>
           </section>
         )}

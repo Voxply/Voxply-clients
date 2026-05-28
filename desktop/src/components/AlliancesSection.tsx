@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type {
   AllianceDetail,
   AllianceInfo,
@@ -17,6 +18,7 @@ export function AlliancesSection({
   channels: Channel[];
   ownHubUrl: string;
 }) {
+  const { t } = useTranslation();
   const [alliances, setAlliances] = useState<AllianceInfo[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [detail, setDetail] = useState<AllianceDetail | null>(null);
@@ -108,11 +110,11 @@ export function AlliancesSection({
   async function handleJoin() {
     const code = joinCode.trim();
     if (!code) return;
-    let u: string, a: string, t: string;
+    let u: string, a: string, tok: string;
     try {
       const parsed = JSON.parse(atob(code));
-      u = parsed.u; a = parsed.a; t = parsed.t;
-      if (!u || !a || !t) throw new Error("invalid");
+      u = parsed.u; a = parsed.a; tok = parsed.t;
+      if (!u || !a || !tok) throw new Error("invalid");
     } catch {
       setError("Invalid share code — make sure you pasted it completely.");
       return;
@@ -121,7 +123,7 @@ export function AlliancesSection({
       await invoke("join_alliance", {
         inviterHubUrl: u,
         allianceId: a,
-        inviteToken: t,
+        inviteToken: tok,
         ownHubPublicUrl: ownHubUrl || u,
       });
       setJoinCode("");
@@ -219,20 +221,24 @@ export function AlliancesSection({
     await refreshDetail(selectedId);
   }
 
+  const tabLabels: Record<AllianceTab, string> = {
+    members: t("alliances.tab.members"),
+    channels: t("alliances.tab.channels"),
+    invite: t("alliances.tab.invite"),
+  };
+
   return (
     <section>
-      <h1>Alliances</h1>
+      <h1>{t("alliances.title")}</h1>
       <p className="muted">
-        Group your hub with other hubs to share channels and voice. A hub can
-        be in multiple alliances.
+        {t("alliances.hint")}
       </p>
 
       <div className="alliances-layout">
-        {/* ── Left: list + inline create ── */}
         <div className="alliances-list-panel">
           <div className="alliances-list">
             {alliances.length === 0 && !isCreating && (
-              <p className="alliances-empty-hint muted">No alliances yet</p>
+              <p className="alliances-empty-hint muted">{t("alliances.empty")}</p>
             )}
             {alliances.map((a) => (
               <button
@@ -250,19 +256,19 @@ export function AlliancesSection({
                   type="text"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  placeholder="Alliance name"
+                  placeholder={t("alliances.new.placeholder")}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") handleCreate();
                     if (e.key === "Escape") { setIsCreating(false); setNewName(""); }
                   }}
                 />
                 <div className="alliance-create-inline-actions">
-                  <button onClick={handleCreate} disabled={!newName.trim()}>Create</button>
+                  <button onClick={handleCreate} disabled={!newName.trim()}>{t("modal.create")}</button>
                   <button
                     className="btn-secondary"
                     onClick={() => { setIsCreating(false); setNewName(""); }}
                   >
-                    Cancel
+                    {t("modal.cancel")}
                   </button>
                 </div>
               </div>
@@ -273,14 +279,13 @@ export function AlliancesSection({
             <button
               className="alliance-list-add"
               onClick={() => setIsCreating(true)}
-              title="New alliance"
+              title={t("alliances.new.title")}
             >
-              + New alliance
+              {t("alliances.new")}
             </button>
           )}
         </div>
 
-        {/* ── Right: detail panel ── */}
         <div className="alliances-detail-panel">
           {error && (
             <div className="error-banner alliances-error">
@@ -294,18 +299,18 @@ export function AlliancesSection({
               <div className="alliances-detail-header">
                 <h2 className="alliances-detail-name">{detail.name}</h2>
                 <button className="btn-secondary-small" onClick={handleLeave}>
-                  Leave
+                  {t("alliances.detail.leave")}
                 </button>
               </div>
 
               <div className="alliances-tab-bar">
-                {(["members", "channels", "invite"] as AllianceTab[]).map((t) => (
+                {(["members", "channels", "invite"] as AllianceTab[]).map((tabId) => (
                   <button
-                    key={t}
-                    className={`alliances-tab${tab === t ? " active" : ""}`}
-                    onClick={() => setTab(t)}
+                    key={tabId}
+                    className={`alliances-tab${tab === tabId ? " active" : ""}`}
+                    onClick={() => setTab(tabId)}
                   >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                    {tabLabels[tabId]}
                   </button>
                 ))}
               </div>
@@ -325,11 +330,10 @@ export function AlliancesSection({
                 {tab === "channels" && (
                   <>
                     <p className="muted" style={{ marginBottom: "var(--space-3)" }}>
-                      Toggle which of your local channels are visible to other
-                      members of this alliance.
+                      {t("alliances.channels.hint")}
                     </p>
                     {rootItems.length === 0 ? (
-                      <p className="muted">No channels to share yet.</p>
+                      <p className="muted">{t("alliances.channels.empty")}</p>
                     ) : (
                       <div className="alliance-channel-tree">
                         {rootItems.map((item) => {
@@ -401,10 +405,9 @@ export function AlliancesSection({
                 {tab === "invite" && (
                   <div className="alliance-invite-tab">
                     <div className="alliance-invite-section">
-                      <label className="settings-label">Send invite directly</label>
+                      <label className="settings-label">{t("alliances.invite.push.label")}</label>
                       <p className="muted">
-                        Enter another hub's URL to send them an alliance invite.
-                        Their admin will see it in Hub Settings → Alliance invites.
+                        {t("alliances.invite.push.hint")}
                       </p>
                       <div className="alliance-join-row">
                         <input
@@ -412,14 +415,14 @@ export function AlliancesSection({
                           value={pushTargetUrl}
                           onChange={(e) => setPushTargetUrl(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter" && !pushMessage) handleSendPushInvite(); }}
-                          placeholder="https://other-hub.example.com"
+                          placeholder={t("alliances.invite.push.placeholder")}
                           disabled={pushSending}
                         />
                       </div>
                       <textarea
                         value={pushMessage}
                         onChange={(e) => setPushMessage(e.target.value)}
-                        placeholder="Optional message to the other hub's admin…"
+                        placeholder={t("alliances.invite.push.message_placeholder")}
                         rows={2}
                         disabled={pushSending}
                         style={{ marginTop: "var(--space-2)", resize: "vertical" }}
@@ -429,19 +432,19 @@ export function AlliancesSection({
                         disabled={!pushTargetUrl.trim() || pushSending}
                         style={{ marginTop: "var(--space-2)" }}
                       >
-                        {pushSending ? "Sending…" : "Send invite"}
+                        {pushSending ? t("alliances.invite.push.sending") : t("alliances.invite.push.send")}
                       </button>
                     </div>
 
                     <div className="alliance-invite-section">
-                      <label className="settings-label">Invite another hub</label>
+                      <label className="settings-label">{t("alliances.invite.code.label")}</label>
                       <p className="muted">
-                        Generate a share code and send it to the other hub's admin.
+                        {t("alliances.invite.code.hint")}
                       </p>
                       <button className="btn-secondary" onClick={handleGenerateInvite}>
                         {invite && invite.alliance_id === selectedId
-                          ? "Regenerate share code"
-                          : "Generate share code"}
+                          ? t("alliances.invite.code.regenerate")
+                          : t("alliances.invite.code.generate")}
                       </button>
                       {invite && invite.alliance_id === selectedId && (() => {
                         const shareCode = btoa(JSON.stringify({
@@ -451,7 +454,7 @@ export function AlliancesSection({
                         }));
                         return (
                           <div className="alliance-share-code-block">
-                            <p className="muted">Share this code with the other hub's admin:</p>
+                            <p className="muted">{t("alliances.invite.code.share_hint")}</p>
                             <div className="alliance-share-code-row">
                               <code className="alliance-share-code">{shareCode}</code>
                               <button
@@ -459,7 +462,7 @@ export function AlliancesSection({
                                 onClick={() => navigator.clipboard.writeText(shareCode).catch(() => {})}
                                 title="Copy to clipboard"
                               >
-                                Copy
+                                {t("alliances.invite.code.copy")}
                               </button>
                             </div>
                           </div>
@@ -468,9 +471,9 @@ export function AlliancesSection({
                     </div>
 
                     <div className="alliance-invite-section">
-                      <label className="settings-label">Join via share code</label>
+                      <label className="settings-label">{t("alliances.join.label")}</label>
                       <p className="muted">
-                        Paste the share code you received from another hub's admin.
+                        {t("alliances.join.hint")}
                       </p>
                       <div className="alliance-join-row">
                         <input
@@ -478,10 +481,10 @@ export function AlliancesSection({
                           value={joinCode}
                           onChange={(e) => setJoinCode(e.target.value)}
                           onKeyDown={(e) => { if (e.key === "Enter") handleJoin(); }}
-                          placeholder="Paste share code…"
+                          placeholder={t("alliances.join.placeholder")}
                         />
                         <button onClick={handleJoin} disabled={!joinCode.trim()}>
-                          Join
+                          {t("alliances.join.button")}
                         </button>
                       </div>
                     </div>
@@ -492,8 +495,7 @@ export function AlliancesSection({
           ) : (
             <div className="alliances-no-selection">
               <p className="muted">
-                Select an alliance from the list to see its details, or create
-                a new one with the + button.
+                {t("alliances.no_selection")}
               </p>
             </div>
           )}

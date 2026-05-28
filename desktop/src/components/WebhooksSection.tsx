@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { Channel, WebhookInfo, WebhookCreatedResult } from "../types";
 import { formatRelative } from "../utils/format";
 
@@ -15,6 +16,7 @@ function maskUrl(url: string): string {
 }
 
 export function WebhooksSection({ hubUrl, channels }: Props) {
+  const { t } = useTranslation();
   const [webhooks, setWebhooks] = useState<WebhookInfo[]>([]);
   const [channelId, setChannelId] = useState("");
   const [displayName, setDisplayName] = useState("");
@@ -78,7 +80,7 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
   }
 
   async function handleDelete(id: string) {
-    if (!window.confirm("Delete this webhook? The URL will stop working immediately.")) return;
+    if (!window.confirm(t("webhooks.delete") + "?")) return;
     try {
       await invoke("admin_delete_webhook", { hubUrl, webhookId: id });
       await loadWebhooks();
@@ -89,11 +91,11 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
 
   return (
     <section>
-      <h1>Integrations</h1>
+      <h1>{t("webhooks.title")}</h1>
 
-      <h2>Incoming Webhooks</h2>
+      <h2>{t("webhooks.section")}</h2>
       <p className="muted">
-        Webhooks let external services post messages into a channel using a simple HTTP POST.
+        {t("webhooks.hint")}
       </p>
 
       {error && (
@@ -101,26 +103,26 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
       )}
 
       <div className="settings-section">
-        <label className="settings-label">Channel</label>
+        <label className="settings-label">{t("webhooks.channel.label")}</label>
         <select value={channelId} onChange={(e) => setChannelId(e.target.value)} style={{ width: "100%" }}>
-          <option value="">Select a channel…</option>
+          <option value="">{t("webhooks.channel.placeholder")}</option>
           {textChannels.map((ch) => (
             <option key={ch.id} value={ch.id}>#{ch.name}</option>
           ))}
         </select>
       </div>
       <div className="settings-section">
-        <label className="settings-label">Display name</label>
+        <label className="settings-label">{t("webhooks.name.label")}</label>
         <input
           type="text"
           value={displayName}
           onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="My Integration"
+          placeholder={t("webhooks.name.placeholder")}
           style={{ width: "100%" }}
         />
       </div>
       <div className="settings-section">
-        <label className="settings-label">Avatar URL (optional)</label>
+        <label className="settings-label">{t("webhooks.avatar.label")}</label>
         <input
           type="text"
           value={avatarUrl}
@@ -131,14 +133,14 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
       </div>
       <div className="settings-section">
         <button onClick={handleCreate} disabled={creating || !channelId || !displayName.trim()}>
-          {creating ? "Creating…" : "Create webhook"}
+          {creating ? t("webhooks.creating") : t("webhooks.create")}
         </button>
       </div>
 
       {createdResult && (
         <div className="bot-token-reveal">
           <p className="bot-token-warning">
-            This URL contains a secret. Save it now — it won't be shown again.
+            {t("webhooks.secret_warning")}
           </p>
           <code className="bot-token-value">{createdResult.webhook_url}</code>
           <div className="bot-token-actions">
@@ -149,10 +151,10 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
                 setTimeout(() => setCopiedUrl(false), 2000);
               }}
             >
-              {copiedUrl ? "Copied!" : "Copy URL"}
+              {copiedUrl ? t("webhooks.copied") : t("webhooks.copy_url")}
             </button>
             <button className="btn-secondary" onClick={() => setCreatedResult(null)}>
-              Dismiss
+              {t("webhooks.dismiss")}
             </button>
           </div>
         </div>
@@ -161,7 +163,7 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
       {regeneratedUrl && (
         <div className="bot-token-reveal">
           <p className="bot-token-warning">
-            New webhook URL — save it now.
+            {t("webhooks.regen_warning")}
           </p>
           <code className="bot-token-value">{regeneratedUrl}</code>
           <div className="bot-token-actions">
@@ -172,26 +174,26 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
                 setTimeout(() => setCopiedRegen(false), 2000);
               }}
             >
-              {copiedRegen ? "Copied!" : "Copy URL"}
+              {copiedRegen ? t("webhooks.copied") : t("webhooks.copy_url")}
             </button>
             <button className="btn-secondary" onClick={() => setRegeneratedUrl(null)}>
-              Dismiss
+              {t("webhooks.dismiss")}
             </button>
           </div>
         </div>
       )}
 
       {webhooks.length === 0 ? (
-        <p className="muted">No webhooks yet.</p>
+        <p className="muted">{t("webhooks.empty")}</p>
       ) : (
         <table className="members-table" style={{ marginTop: "var(--space-4)" }}>
           <thead>
             <tr>
-              <th>Name</th>
-              <th>Channel</th>
-              <th>URL (masked)</th>
-              <th>Created</th>
-              <th>Actions</th>
+              <th>{t("webhooks.col.name")}</th>
+              <th>{t("webhooks.col.channel")}</th>
+              <th>{t("webhooks.col.url")}</th>
+              <th>{t("webhooks.col.created")}</th>
+              <th>{t("webhooks.col.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -203,10 +205,10 @@ export function WebhooksSection({ hubUrl, channels }: Props) {
                 <td>{formatRelative(wh.created_at)}</td>
                 <td style={{ display: "flex", gap: "var(--space-2)" }}>
                   <button className="btn-small btn-secondary" onClick={() => handleRegenerate(wh.id)}>
-                    Regenerate
+                    {t("webhooks.regenerate")}
                   </button>
                   <button className="btn-small btn-secondary danger" onClick={() => handleDelete(wh.id)}>
-                    Delete
+                    {t("webhooks.delete")}
                   </button>
                 </td>
               </tr>

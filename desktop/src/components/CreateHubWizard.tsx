@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { Hub, FarmPublicInfo, FarmHubQuota, CreatedFarmHub } from "../types";
 import { FocusTrap } from "./FocusTrap";
 
@@ -35,13 +36,14 @@ function FarmCardView({
   selected: boolean;
   onSelect: () => void;
 }) {
+  const { t } = useTranslation();
   const disabled =
     !farm.reachable ||
     (farm.quota !== null && !farm.quota.can_create);
 
   let statusNote: string | null = null;
-  if (!farm.reachable) statusNote = "Unreachable";
-  else if (farm.quota?.reason === "quota_exceeded") statusNote = "Hub limit reached";
+  if (!farm.reachable) statusNote = t("hub_wizard.farm.unreachable");
+  else if (farm.quota?.reason === "quota_exceeded") statusNote = t("hub_wizard.farm.quota_exceeded");
 
   return (
     <button
@@ -80,7 +82,7 @@ function FarmCardView({
         <span className="muted">
           {farm.ping !== null ? `${farm.ping} ms` : "—"}
         </span>
-        <span className="muted">{farm.hubCount} hubs</span>
+        <span className="muted">{t("hub_wizard.farm.hubs", { count: farm.hubCount })}</span>
         {statusNote && (
           <span style={{ color: "var(--danger)" }}>{statusNote}</span>
         )}
@@ -90,6 +92,7 @@ function FarmCardView({
 }
 
 export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
+  const { t } = useTranslation();
   const [step, setStep] = useState<1 | 2 | 3>(1);
 
   const [farms, setFarms] = useState<FarmCard[]>([]);
@@ -204,10 +207,10 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
 
   function validateName(name: string): string | null {
     const trimmed = name.trim();
-    if (trimmed.length < 1) return "Name is required";
-    if (trimmed.length > 64) return "Name must be 64 characters or fewer";
+    if (trimmed.length < 1) return t("hub_wizard.validate.name_required");
+    if (trimmed.length > 64) return t("hub_wizard.validate.name_too_long");
     if (!/^[a-zA-Z0-9 -]+$/.test(trimmed))
-      return "Name may only contain letters, numbers, spaces, and hyphens";
+      return t("hub_wizard.validate.name_chars");
     return null;
   }
 
@@ -261,15 +264,14 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
       >
         {step === 1 && (
           <>
-            <h3>Create a hub — pick a farm</h3>
+            <h3>{t("hub_wizard.step1.title")}</h3>
             <p className="muted">
-              Choose a farm to host your new hub. Farms are ranked by
-              connection speed.
+              {t("hub_wizard.step1.hint")}
             </p>
 
             {probing && (
               <p className="muted" style={{ marginBottom: 12 }}>
-                Checking farm availability…
+                {t("hub_wizard.step1.checking")}
               </p>
             )}
 
@@ -283,11 +285,11 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
             ))}
 
             {allFarmCards.length === 0 && !probing && (
-              <p className="muted">No farms found in your list.</p>
+              <p className="muted">{t("hub_wizard.step1.no_farms")}</p>
             )}
 
             <div className="settings-section" style={{ marginTop: 16 }}>
-              <label className="settings-label">Or enter a farm URL</label>
+              <label className="settings-label">{t("hub_wizard.step1.custom_url")}</label>
               <div className="settings-row">
                 <input
                   type="text"
@@ -307,7 +309,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
                   onClick={handleProbeCustom}
                   disabled={probeCustomStatus === "loading"}
                 >
-                  {probeCustomStatus === "loading" ? "Checking…" : "Check"}
+                  {probeCustomStatus === "loading" ? t("hub_wizard.step1.checking_btn") : t("hub_wizard.step1.check")}
                 </button>
               </div>
               {probeCustomStatus === "error" && (
@@ -324,13 +326,13 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={onClose}>
-                Cancel
+                {t("modal.cancel")}
               </button>
               <button
                 disabled={!selectedFarm}
                 onClick={() => { if (selectedFarm) setStep(2); }}
               >
-                Next
+                {t("modal.next")}
               </button>
             </div>
           </>
@@ -338,10 +340,10 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
 
         {step === 2 && (
           <>
-            <h3>Create a hub on {selectedFarm?.name}</h3>
+            <h3>{t("hub_wizard.step2.title", { farm: selectedFarm?.name })}</h3>
 
             <div className="settings-section">
-              <label className="settings-label">Hub name</label>
+              <label className="settings-label">{t("hub_wizard.step2.hub_name")}</label>
               <input
                 type="text"
                 value={hubName}
@@ -349,7 +351,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
                   setHubName(e.target.value);
                   setNameError(null);
                 }}
-                placeholder="My Community"
+                placeholder={t("hub_wizard.step2.hub_name_placeholder")}
                 maxLength={64}
                 autoFocus
               />
@@ -361,18 +363,18 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
             </div>
 
             <div className="settings-section">
-              <label className="settings-label">Description (optional)</label>
+              <label className="settings-label">{t("hub_wizard.step2.description")}</label>
               <textarea
                 rows={3}
                 value={hubDescription}
                 onChange={(e) => setHubDescription(e.target.value)}
-                placeholder="What's this hub for?"
+                placeholder={t("hub_wizard.step2.description_placeholder")}
                 maxLength={280}
               />
             </div>
 
             <div className="settings-section">
-              <label className="settings-label">Visibility</label>
+              <label className="settings-label">{t("hub_wizard.step2.visibility")}</label>
               <label className="checkbox-label" style={{ display: "block", marginBottom: 4 }}>
                 <input
                   type="radio"
@@ -380,7 +382,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
                   checked={visibility === "public"}
                   onChange={() => setVisibility("public")}
                 />
-                {" "}Public — listed in farm directory
+                {" "}{t("hub_wizard.step2.visibility.public")}
               </label>
               <label className="checkbox-label" style={{ display: "block" }}>
                 <input
@@ -389,7 +391,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
                   checked={visibility === "private"}
                   onChange={() => setVisibility("private")}
                 />
-                {" "}Private — invite only
+                {" "}{t("hub_wizard.step2.visibility.private")}
               </label>
             </div>
 
@@ -401,10 +403,10 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
 
             <div className="modal-actions">
               <button className="btn-secondary" onClick={() => { setStep(1); setSubmitError(null); }}>
-                Back
+                {t("modal.back")}
               </button>
               <button onClick={handleCreate} disabled={submitting}>
-                {submitting ? "Creating…" : "Create hub"}
+                {submitting ? t("hub_wizard.step2.creating") : t("hub_wizard.step2.create")}
               </button>
             </div>
           </>
@@ -412,7 +414,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
 
         {step === 3 && createdHub && (
           <>
-            <h3>Your hub is ready!</h3>
+            <h3>{t("hub_wizard.step3.title")}</h3>
             <p style={{ marginBottom: 8 }}>
               <strong>{createdHub.name}</strong> is live and you've been
               connected.
@@ -421,7 +423,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
               {createdHub.url}
             </p>
             <div className="modal-actions">
-              <button onClick={onClose}>Open hub</button>
+              <button onClick={onClose}>{t("hub_wizard.step3.open")}</button>
             </div>
           </>
         )}

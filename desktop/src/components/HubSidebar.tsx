@@ -8,6 +8,7 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { useTranslation } from "react-i18next";
 import type { Hub, NotifyMode } from "../types";
 import { SortableHubIcon } from "./SortableItems";
 
@@ -38,6 +39,7 @@ export function HubSidebar({
   onSwitchToDms, onSwitchHub, onRemoveHub,
   onHubReorder, onAddHub, onCreateHub, onDiscover, onFarmSettings,
 }: Props) {
+  const { t } = useTranslation();
   const dndSensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
@@ -92,7 +94,7 @@ export function HubSidebar({
           className={`hub-icon dm ${view === "dms" ? "active" : ""}`}
           onClick={onSwitchToDms}
           disabled={!hasActiveHub}
-          title="Direct Messages"
+          title={t("dm.header.title")}
         >
           @
         </button>
@@ -110,7 +112,7 @@ export function HubSidebar({
               const unread = unreadByHub[h.hub_id] || 0;
               const ping = pingByHub[h.hub_id];
               const offline = ping === null;
-              const titleSuffix = offline ? " — offline" : ping === undefined ? "" : ` — ${ping}ms`;
+              const titleSuffix = offline ? t("hub.offline_suffix") : ping === undefined ? "" : ` — ${ping}ms`;
               const isFocused = focusedIndex === index;
               const isActive = h.hub_id === activeHubId && view === "channels";
               return (
@@ -131,9 +133,9 @@ export function HubSidebar({
                       onContextMenu={(e) => { e.preventDefault(); onRemoveHub(h.hub_id); }}
                       title={`${h.hub_name} (${h.hub_url})${titleSuffix}${
                         hubNotifyMode[h.hub_id] === "silent"
-                          ? " — silenced"
+                          ? t("hub.silenced_suffix")
                           : hubNotifyMode[h.hub_id] === "mentions"
-                          ? " — mentions only"
+                          ? t("hub.mentions_suffix")
                           : ""
                       }`}
                     >
@@ -147,10 +149,10 @@ export function HubSidebar({
                       <span className="hub-unread-badge" aria-hidden="true">{unread > 99 ? "99+" : unread}</span>
                     )}
                     {hubNotifyMode[h.hub_id] === "silent" && (
-                      <span className="hub-muted-badge" title="Silenced" aria-hidden="true">🔕</span>
+                      <span className="hub-muted-badge" title={t("hub.notifications.silent")} aria-hidden="true">🔕</span>
                     )}
                     {hubNotifyMode[h.hub_id] === "mentions" && (
-                      <span className="hub-muted-badge" title="Mentions only" aria-hidden="true">@</span>
+                      <span className="hub-muted-badge" title={t("hub.notifications.mentions")} aria-hidden="true">@</span>
                     )}
                   </div>
                   {offline && <span className="hub-offline-label" aria-hidden="true">offline</span>}
@@ -165,7 +167,7 @@ export function HubSidebar({
         <button
           className="hub-icon add"
           onClick={() => setAddMenuOpen((v) => !v)}
-          title="Add or create hub"
+          title={t("hub.add_or_create")}
         >
           +
         </button>
@@ -197,7 +199,7 @@ export function HubSidebar({
               }}
               onClick={() => { setAddMenuOpen(false); onAddHub(); }}
             >
-              Join a hub
+              {t("hub.join")}
             </button>
             <button
               style={{
@@ -212,7 +214,7 @@ export function HubSidebar({
               }}
               onClick={() => { setAddMenuOpen(false); onCreateHub(); }}
             >
-              Create a hub
+              {t("hub.create")}
             </button>
           </div>
         )}
@@ -222,7 +224,7 @@ export function HubSidebar({
       <button
         className={`hub-icon discover ${showDiscover ? "active" : ""}`}
         onClick={onDiscover}
-        title="Discover hubs"
+        title={t("hub.discover")}
       >
         ⊕
       </button>
@@ -230,7 +232,7 @@ export function HubSidebar({
         <button
           className="hub-icon"
           onClick={onFarmSettings}
-          title="Farm settings"
+          title={t("hub.farm_settings")}
           style={{ fontSize: 14 }}
         >
           ⚙

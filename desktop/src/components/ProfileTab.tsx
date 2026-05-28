@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Hub, NamedProfile } from "../types";
 import { Avatar } from "./Avatar";
 import { AvatarEditor } from "./AvatarEditor";
@@ -34,6 +35,7 @@ export function ProfileTab({
   onSetDefaultProfile: (id: string) => void;
   onApplyProfileToHub: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const [selectedId, setSelectedId] = useState<string | null>(
     defaultProfileId ?? profiles[0]?.id ?? null,
   );
@@ -61,14 +63,13 @@ export function ProfileTab({
 
   return (
     <section>
-      <h1>Profile</h1>
+      <h1>{t("profile.title")}</h1>
       <p className="muted" style={{ marginBottom: "var(--space-4)" }}>
-        Create as many profiles as you like — say, one for friends and one for
-        work. The one marked Default is what new hubs use automatically.
+        {t("profile.hint")}
       </p>
 
       <div className="settings-section">
-        <label className="settings-label">Active profile</label>
+        <label className="settings-label">{t("profile.active_label")}</label>
         <div className="profile-select-row">
           <select
             value={selectedId ?? ""}
@@ -76,12 +77,12 @@ export function ProfileTab({
           >
             {profiles.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.label}{defaultProfileId === p.id ? " (Default)" : ""}
+                {p.label}{defaultProfileId === p.id ? ` (${t("profile.default_badge")})` : ""}
               </option>
             ))}
           </select>
           <button className="btn-secondary" onClick={onCreateProfile}>
-            + New
+            {t("profile.new")}
           </button>
         </div>
       </div>
@@ -91,8 +92,8 @@ export function ProfileTab({
           <div className="profile-card-preview">
             <Avatar src={selected.avatar} name={selected.display_name || selected.label} size={56} />
             <div className="profile-card-preview-text">
-              <div className="profile-card-preview-name">{selected.display_name || <span className="muted">no display name</span>}</div>
-              <div className="profile-card-preview-label">{selected.label}{defaultProfileId === selected.id ? <span className="profile-default-badge">Default</span> : null}</div>
+              <div className="profile-card-preview-name">{selected.display_name || <span className="muted">{t("profile.no_display_name")}</span>}</div>
+              <div className="profile-card-preview-label">{selected.label}{defaultProfileId === selected.id ? <span className="profile-default-badge">{t("profile.default_badge")}</span> : null}</div>
             </div>
           </div>
 
@@ -104,7 +105,7 @@ export function ProfileTab({
                 fallbackName={selected.display_name || selected.label}
               />
               <div className="profile-editor-fields">
-                <label className="settings-label">Display name</label>
+                <label className="settings-label">{t("profile.display_name")}</label>
                 <input
                   type="text"
                   value={selected.display_name}
@@ -112,7 +113,7 @@ export function ProfileTab({
                   placeholder="e.g. Antonio"
                 />
                 <label className="settings-label" style={{ marginTop: "var(--space-3)" }}>
-                  Profile label
+                  {t("profile.label")}
                 </label>
                 <input
                   type="text"
@@ -126,23 +127,23 @@ export function ProfileTab({
             <div className="profile-editor-actions">
               {defaultProfileId !== selected.id && (
                 <button className="btn-secondary" onClick={() => onSetDefaultProfile(selected.id)}>
-                  ★ Set as default
+                  {t("profile.set_default")}
                 </button>
               )}
               <button
                 onClick={() => onApplyProfileToHub(selected.id)}
                 disabled={!hasActiveHub}
-                title={hasActiveHub ? "" : "Join a hub first"}
+                title={hasActiveHub ? "" : t("profile.apply_hint")}
               >
-                Apply to this hub
+                {t("profile.apply_to_hub")}
               </button>
               <button
                 className="btn-secondary"
                 onClick={() => onDeleteProfile(selected.id)}
                 disabled={profiles.length <= 1}
-                title={profiles.length <= 1 ? "You need at least one profile" : ""}
+                title={profiles.length <= 1 ? t("profile.delete_hint") : ""}
               >
-                Delete
+                {t("profile.delete")}
               </button>
             </div>
           </div>
@@ -151,10 +152,9 @@ export function ProfileTab({
 
       {hubs.length > 0 && profiles.length > 0 && (
         <div className="settings-section">
-          <label className="settings-label">Profile per hub</label>
+          <label className="settings-label">{t("profile.per_hub.label")}</label>
           <p className="muted">
-            Choose which profile to use on each hub. Changing the active hub's
-            assignment applies it immediately.
+            {t("profile.per_hub.hint")}
           </p>
           <div className="profile-hub-list">
             {hubs.map((hub) => {
@@ -188,7 +188,7 @@ export function ProfileTab({
 
       {profiles.length === 0 && (
         <p className="muted">
-          No profiles yet — click <strong>+ New</strong> above to create one.
+          {t("profile.empty")}
         </p>
       )}
     </section>

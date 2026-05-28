@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 
 interface HubListing {
   hub_pubkey: string;
@@ -24,6 +25,7 @@ const DEFAULT_DIR = "https://discovery.voxply.io";
 const PAGE_SIZE = 20;
 
 export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }: Props) {
+  const { t } = useTranslation();
   const [q, setQ] = useState("");
   const [language, setLanguage] = useState("");
   const [hubs, setHubs] = useState<HubListing[]>([]);
@@ -77,26 +79,26 @@ export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }:
   return (
     <div className="discover-page">
       <div className="discover-header">
-        <h1>Discover hubs</h1>
-        <button className="settings-close-x" onClick={onClose} title="Close">×</button>
+        <h1>{t("discover.title")}</h1>
+        <button className="settings-close-x" onClick={onClose} title={t("modal.close")}>×</button>
       </div>
 
       <form className="discover-search-bar" onSubmit={handleSearch}>
         <input
           type="text"
-          placeholder="Search hubs…"
+          placeholder={t("discover.search.placeholder")}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="discover-search-input"
         />
         <input
           type="text"
-          placeholder="Language"
+          placeholder={t("discover.search.language")}
           value={language}
           onChange={(e) => setLanguage(e.target.value)}
           className="discover-lang-input"
         />
-        <button type="submit" disabled={loading}>Search</button>
+        <button type="submit" disabled={loading}>{t("discover.search.button")}</button>
         {(q || language) && (
           <button type="button" className="btn-secondary" onClick={() => {
             setQ("");
@@ -104,7 +106,7 @@ export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }:
             fetchPage("", "", 1, true);
             setPage(1);
           }}>
-            Clear
+            {t("discover.search.clear")}
           </button>
         )}
       </form>
@@ -113,9 +115,9 @@ export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }:
 
       {hubs.length === 0 && !loading && !error && (
         <div className="discover-empty">
-          <p className="muted">No hubs found. Try a different search or check back later.</p>
+          <p className="muted">{t("discover.empty")}</p>
           <p className="muted" style={{ fontSize: "var(--text-sm)" }}>
-            Hub owners can list their hub from Hub Settings → Overview → Submit to directory.
+            {t("discover.empty.hint")}
           </p>
         </div>
       )}
@@ -149,7 +151,7 @@ export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }:
             )}
             <div className="discover-card-footer">
               {hub.invite_only && (
-                <span className="discover-badge">Invite only</span>
+                <span className="discover-badge">{t("discover.invite_only")}</span>
               )}
               {hub.min_security_level > 0 && (
                 <span className="discover-badge">PoW {hub.min_security_level}</span>
@@ -158,18 +160,18 @@ export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }:
                 className="primary discover-join-btn"
                 onClick={() => handleJoin(hub)}
               >
-                {hub.invite_only && hub.invite_code ? "Join with invite" : "Join"}
+                {hub.invite_only && hub.invite_code ? t("discover.join_with_invite") : t("discover.join")}
               </button>
             </div>
           </div>
         ))}
       </div>
 
-      {loading && <p className="discover-loading muted">Loading…</p>}
+      {loading && <p className="discover-loading muted">{t("discover.loading")}</p>}
 
       {hasMore && !loading && (
         <div className="discover-load-more">
-          <button className="btn-secondary" onClick={handleLoadMore}>Load more</button>
+          <button className="btn-secondary" onClick={handleLoadMore}>{t("discover.load_more")}</button>
         </div>
       )}
     </div>

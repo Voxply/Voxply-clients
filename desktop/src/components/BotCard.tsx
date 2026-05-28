@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { BotProfile } from "../types";
 import { Avatar } from "./Avatar";
 import { FocusTrap } from "./FocusTrap";
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function BotCard({ pubkey, hubUrl, anchorRect, onClose }: Props) {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<BotProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const cardRef = useRef<HTMLDivElement>(null);
@@ -48,14 +50,14 @@ export function BotCard({ pubkey, hubUrl, anchorRect, onClose }: Props) {
       {error ? (
         <p className="muted">{error}</p>
       ) : !profile ? (
-        <p className="muted">Loading…</p>
+        <p className="muted">{t("bot.card.loading")}</p>
       ) : (
         <>
           <div className="bot-card-header">
             <Avatar src={profile.avatar_url} name={profile.name} size={40} />
             <div className="bot-card-identity">
               <span className="bot-card-name">{profile.name}</span>
-              <span className="bot-badge">BOT</span>
+              <span className="bot-badge">{t("bot.badge")}</span>
             </div>
           </div>
           {profile.description && (
@@ -63,7 +65,7 @@ export function BotCard({ pubkey, hubUrl, anchorRect, onClose }: Props) {
           )}
           {profile.commands.length > 0 && (
             <div className="bot-card-commands">
-              <p className="bot-card-section-label">Commands</p>
+              <p className="bot-card-section-label">{t("bot.card.commands")}</p>
               <ul>
                 {profile.commands.map((cmd) => (
                   <li key={cmd.name} className="bot-card-command-row">
@@ -74,7 +76,7 @@ export function BotCard({ pubkey, hubUrl, anchorRect, onClose }: Props) {
               </ul>
             </div>
           )}
-          <p className="bot-card-footer muted">This is an automated account.</p>
+          <p className="bot-card-footer muted">{t("bot.card.footer")}</p>
         </>
       )}
     </div>

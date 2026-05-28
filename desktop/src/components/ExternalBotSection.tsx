@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { Channel, ExternalBotRow, ExternalBotInviteResult } from "../types";
 import { formatRelative } from "../utils/format";
 
@@ -20,6 +21,7 @@ function truncatePk(pk: string) {
 }
 
 export function ExternalBotSection({ hubUrl, channels }: Props) {
+  const { t } = useTranslation();
   const [bots, setBots] = useState<ExternalBotRow[]>([]);
   const [pubkeyInput, setPubkeyInput] = useState("");
   const [noteInput, setNoteInput] = useState("");
@@ -68,7 +70,7 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
   }
 
   async function handleRemove(pubkey: string) {
-    if (!window.confirm("Remove this external bot?")) return;
+    if (!window.confirm(t("ext_bot.remove") + "?")) return;
     try {
       await invoke("admin_remove_external_bot", { hubUrl, pubkey });
       await loadBots();
@@ -120,16 +122,16 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
   }
 
   function statusLabel(status: ExternalBotRow["approval_status"]) {
-    if (status === "pending") return "Pending invite";
-    if (status === "active") return "Active";
-    return "Removed";
+    if (status === "pending") return t("ext_bot.status.pending");
+    if (status === "active") return t("ext_bot.status.active");
+    return t("ext_bot.status.removed");
   }
 
   return (
     <div>
-      <h2 style={{ marginTop: "var(--space-6)" }}>External Bots</h2>
+      <h2 style={{ marginTop: "var(--space-6)" }}>{t("ext_bot.section.title")}</h2>
       <p className="muted">
-        Add a bot operated externally. Generate an invite token and share it with the bot operator.
+        {t("ext_bot.section.hint")}
       </p>
 
       {error && (
@@ -137,35 +139,35 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
       )}
 
       <div className="settings-section">
-        <label className="settings-label">Bot public key (hex)</label>
+        <label className="settings-label">{t("ext_bot.pubkey.label")}</label>
         <input
           type="text"
           value={pubkeyInput}
           onChange={(e) => setPubkeyInput(e.target.value)}
-          placeholder="0x… or hex pubkey"
+          placeholder={t("ext_bot.pubkey.placeholder")}
           style={{ width: "100%" }}
         />
       </div>
       <div className="settings-section">
-        <label className="settings-label">Local note (optional)</label>
+        <label className="settings-label">{t("ext_bot.note.label")}</label>
         <input
           type="text"
           value={noteInput}
           onChange={(e) => setNoteInput(e.target.value)}
-          placeholder="e.g. moderation bot"
+          placeholder={t("ext_bot.note.placeholder")}
           style={{ width: "100%" }}
         />
       </div>
       <div className="settings-section">
         <button onClick={handleGenerate} disabled={generating || !pubkeyInput.trim()}>
-          {generating ? "Generating…" : "Generate invite token"}
+          {generating ? t("ext_bot.generating") : t("ext_bot.generate")}
         </button>
       </div>
 
       {inviteResult && (
         <div className="bot-token-reveal">
           <p className="bot-token-warning">
-            Share this token with the bot operator. It expires in 24 hours.
+            {t("ext_bot.token.warning")}
           </p>
           <code className="bot-token-value">{inviteResult.bot_invite_token}</code>
           <div className="bot-token-actions">
@@ -176,26 +178,26 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
                 setTimeout(() => setCopiedToken(false), 2000);
               }}
             >
-              {copiedToken ? "Copied!" : "Copy token"}
+              {copiedToken ? t("ext_bot.token.copied") : t("ext_bot.token.copy")}
             </button>
             <button className="btn-secondary" onClick={() => setInviteResult(null)}>
-              Dismiss
+              {t("ext_bot.token.dismiss")}
             </button>
           </div>
         </div>
       )}
 
       {bots.length === 0 ? (
-        <p className="muted">No external bots yet.</p>
+        <p className="muted">{t("ext_bot.empty")}</p>
       ) : (
         <table className="members-table" style={{ marginTop: "var(--space-4)" }}>
           <thead>
             <tr>
-              <th>Name / note</th>
-              <th>Pubkey</th>
-              <th>Status</th>
-              <th>Last seen</th>
-              <th>Actions</th>
+              <th>{t("ext_bot.col.name")}</th>
+              <th>{t("ext_bot.col.pubkey")}</th>
+              <th>{t("ext_bot.col.status")}</th>
+              <th>{t("ext_bot.col.last_seen")}</th>
+              <th>{t("ext_bot.col.actions")}</th>
             </tr>
           </thead>
           <tbody>
@@ -204,16 +206,16 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
               return (
                 <React.Fragment key={bot.public_key}>
                   <tr>
-                    <td>{bot.local_note ?? bot.display_name ?? <span className="muted">(unnamed)</span>}</td>
+                    <td>{bot.local_note ?? bot.display_name ?? <span className="muted">{t("ext_bot.unnamed")}</span>}</td>
                     <td><code title={bot.public_key}>{truncatePk(bot.public_key)}</code></td>
                     <td>{statusLabel(bot.approval_status)}</td>
                     <td>{bot.last_seen_at ? formatRelative(bot.last_seen_at) : <span className="muted">—</span>}</td>
                     <td style={{ display: "flex", gap: "var(--space-2)", flexWrap: "wrap" }}>
                       <button className="btn-small btn-secondary" onClick={() => toggleScope(bot.public_key)}>
-                        {scope?.expanded ? "Hide access" : "Channel access"}
+                        {scope?.expanded ? t("ext_bot.scope.hide") : t("ext_bot.scope.show")}
                       </button>
                       <button className="btn-small btn-secondary danger" onClick={() => handleRemove(bot.public_key)}>
-                        Remove
+                        {t("ext_bot.remove")}
                       </button>
                     </td>
                   </tr>
@@ -227,7 +229,7 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
                               checked={scope.restricted}
                               onChange={(e) => toggleRestricted(bot.public_key, e.target.checked)}
                             />
-                            Restrict to specific channels
+                            {t("ext_bot.scope.restrict")}
                           </label>
                           {scope.restricted && (
                             <div style={{ marginTop: "var(--space-2)", display: "flex", flexWrap: "wrap", gap: "var(--space-2)" }}>
@@ -245,7 +247,7 @@ export function ExternalBotSection({ hubUrl, channels }: Props) {
                           )}
                           <div style={{ marginTop: "var(--space-3)" }}>
                             <button onClick={() => saveScope(bot.public_key)} disabled={scope.saving}>
-                              {scope.saving ? "Saving…" : "Save access"}
+                              {scope.saving ? t("ext_bot.scope.saving") : t("ext_bot.scope.save")}
                             </button>
                           </div>
                         </div>
