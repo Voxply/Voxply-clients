@@ -1,5 +1,4 @@
 import { useState, useCallback } from "react";
-import { invoke } from "@tauri-apps/api/core";
 import type { ComponentRow, BotButton, BotSelect } from "../types";
 
 interface Props {
@@ -9,17 +8,14 @@ interface Props {
   onInteract: (messageId: string, customId: string, values: string[]) => void;
 }
 
-export function MessageComponents({ rows, messageId, hubUrl, onInteract }: Props) {
+export function MessageComponents({ rows, messageId, onInteract }: Props) {
   const [disabledIds, setDisabledIds] = useState<Set<string>>(new Set());
 
-  // TODO: Android has no send_component_interaction Tauri command — invoke fails
-  // silently and the button re-enables after the timeout. Wire a platform HTTP
-  // call here once the hub interaction endpoint is implemented.
   const fireInteraction = useCallback(
-    async (customId: string, values: string[]) => {
+    (customId: string, values: string[]) => {
       setDisabledIds((prev) => new Set(prev).add(customId));
 
-      const timer = setTimeout(() => {
+      setTimeout(() => {
         setDisabledIds((prev) => {
           const next = new Set(prev);
           next.delete(customId);
@@ -27,25 +23,9 @@ export function MessageComponents({ rows, messageId, hubUrl, onInteract }: Props
         });
       }, 5000);
 
-      try {
-        await invoke("send_component_interaction", {
-          hubUrl,
-          messageId,
-          customId,
-          values,
-        });
-      } catch {
-        clearTimeout(timer);
-        setDisabledIds((prev) => {
-          const next = new Set(prev);
-          next.delete(customId);
-          return next;
-        });
-      }
-
       onInteract(messageId, customId, values);
     },
-    [hubUrl, messageId, onInteract],
+    [messageId, onInteract],
   );
 
   if (!rows.length) return null;
