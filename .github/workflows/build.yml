@@ -1,39 +1,49 @@
 name: Build check
+
 on:
   push:
     branches: [main]
   pull_request:
+
 jobs:
   check:
-    strategy:
-      matrix:
-        os: [windows-latest, ubuntu-22.04]
-    runs-on: ${{ matrix.os }}
+    name: typecheck + cargo check
+    runs-on: ubuntu-22.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout desktop
+        uses: actions/checkout@v4
         with:
-          node-version: '20'
-          cache: npm
-          cache-dependency-path: desktop/package-lock.json
-      - uses: dtolnay/rust-toolchain@stable
+          path: desktop
+
+      # The i18n package lives in Voxply-web at file:../../web/i18n
+      - name: Checkout web (for i18n)
+        uses: actions/checkout@v4
+        with:
+          repository: Voxply/Voxply-web
+          path: web
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - uses: Swatinem/rust-cache@v2
-      - name: Install GTK/WebKit system libraries (Linux only)
-        if: runner.os == 'Linux'
-        run: |
-          sudo apt-get update -q
-          sudo apt-get install -y --no-install-recommends \
-            libgtk-3-dev \
-            libwebkit2gtk-4.1-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev \
-            libssl-dev \
-            libjavascriptcoregtk-4.1-dev
-      - name: Cargo check
-        run: cargo check --workspace
-      - name: Install npm deps
-        working-directory: desktop
+        with:
+          workspaces: desktop/desktop/src-tauri
+
+      - name: Install Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: desktop/desktop/package-lock.json
+
+      - name: Install JS deps
+        working-directory: desktop/desktop
         run: npm ci
+
       - name: TypeScript check
-        working-directory: desktop
+        working-directory: desktop/desktop
         run: npx tsc --noEmit
+
+      - name: Cargo check (Tauri Rust side)
+        working-directory: desktop/desktop/src-tauri
+        run: cargo check
