@@ -13,6 +13,24 @@
  */
 
 /* ============================================================
+   GLOBAL SCROLLBAR — thin and unobtrusive everywhere
+   ============================================================ */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-faint);
+}
+
+/* ============================================================
    UTILITY
    ============================================================ */
 .sr-only {
@@ -3691,11 +3709,7 @@ select:focus-visible {
 }
 
 .reaction-picker-popup {
-  position: absolute;
-  bottom: 100%;
-  right: 0;
-  margin-bottom: 4px;
-  margin-top: 0;
+  /* position, top/bottom/right set via inline style (fixed viewport coords) */
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--r-md);
@@ -3704,7 +3718,6 @@ select:focus-visible {
   flex-direction: column;
   gap: var(--space-2);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-  z-index: 100;
   width: 320px;
   overflow-x: hidden;
   box-sizing: border-box;
@@ -3713,15 +3726,7 @@ select:focus-visible {
 .reaction-picker-overlay {
   position: fixed;
   inset: 0;
-  z-index: 99;
-}
-
-/* Open downward when near the top of the viewport */
-.reaction-picker-popup.open-down {
-  bottom: auto;
-  top: 100%;
-  margin-bottom: 0;
-  margin-top: 4px;
+  z-index: 999;
 }
 
 .reaction-picker-search {
@@ -3752,17 +3757,6 @@ select:focus-visible {
   overflow-x: hidden;
 }
 
-/* Thin scrollbar so it doesn't eat into the emoji columns */
-.reaction-picker-grid::-webkit-scrollbar {
-  width: 4px;
-}
-.reaction-picker-grid::-webkit-scrollbar-track {
-  background: transparent;
-}
-.reaction-picker-grid::-webkit-scrollbar-thumb {
-  background: var(--border);
-  border-radius: 2px;
-}
 
 .reaction-picker-recents {
   /* Show at most one row of recents (no scroll, no overflow) */
