@@ -2875,6 +2875,11 @@ select:focus-visible {
   display: inline-flex;
 }
 
+/* Keep actions visible while the reaction picker popup is open */
+.message-actions:has(.reaction-picker-popup) {
+  display: inline-flex;
+}
+
 .message-action {
   width: 26px;
   height: 26px;
@@ -3701,6 +3706,13 @@ select:focus-visible {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
   z-index: 100;
   width: 280px;
+  overflow-x: hidden;
+}
+
+.reaction-picker-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99;
 }
 
 /* Open downward when near the top of the viewport */
@@ -3736,11 +3748,13 @@ select:focus-visible {
   gap: 2px;
   max-height: 200px;
   overflow-y: auto;
+  overflow-x: hidden;
 }
 
 .reaction-picker-recents {
-  max-height: none;
-  overflow: visible;
+  /* Show at most two rows of recents; clip the rest */
+  max-height: 72px;
+  overflow: hidden;
 }
 
 .reaction-picker-section-label {

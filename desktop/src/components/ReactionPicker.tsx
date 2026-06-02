@@ -57,6 +57,9 @@ export function ReactionPicker({
         🙂+
       </button>
       {open && (
+        <>
+        {/* Transparent overlay captures any click outside the popup */}
+        <div className="reaction-picker-overlay" onClick={handleClose} />
         <FocusTrap>
         <div
           className={`reaction-picker-popup ${openDown ? "open-down" : ""}`}
@@ -111,6 +114,7 @@ export function ReactionPicker({
           </div>
         </div>
         </FocusTrap>
+        </>
       )}
     </div>
   );
