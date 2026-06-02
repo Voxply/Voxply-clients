@@ -54,6 +54,9 @@ export interface SettingsPageProps {
   voiceOutputDevice: string;
   onInputDeviceChange: (v: string) => void;
   onOutputDeviceChange: (v: string) => void;
+  mediaOutputDevices: { deviceId: string; label: string }[];
+  mediaOutputDeviceId: string;
+  onMediaOutputDeviceChange: (id: string) => void;
   vadThreshold: number;
   onVadChange: (v: number) => void;
   voiceMode: "vad" | "ptt";
@@ -303,6 +306,22 @@ export function SettingsPage(props: SettingsPageProps) {
                   </select>
                 </div>
               </div>
+              {props.mediaOutputDevices.length > 0 && (
+                <div className="voice-devices-row" style={{ marginTop: "var(--space-3)" }}>
+                  <div>
+                    <label className="settings-label">{t("settings.voice.media_speaker", "Screen share audio output")}</label>
+                    <select
+                      value={props.mediaOutputDeviceId}
+                      onChange={(e) => props.onMediaOutputDeviceChange(e.target.value)}
+                    >
+                      <option value="">{t("settings.voice.system_default")}</option>
+                      {props.mediaOutputDevices.map((d) => (
+                        <option key={d.deviceId} value={d.deviceId}>{d.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="settings-section">
               <label className="settings-label">

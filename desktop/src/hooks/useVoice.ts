@@ -28,6 +28,11 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
   const [micLevel, setMicLevel] = useState<number>(0);
   const [audioInputs, setAudioInputs] = useState<string[]>([]);
   const [audioOutputs, setAudioOutputs] = useState<string[]>([]);
+  // Browser-enumerated audio output devices (for setSinkId on <video> elements).
+  const [mediaOutputDevices, setMediaOutputDevices] = useState<{ deviceId: string; label: string }[]>([]);
+  const [mediaOutputDeviceId, setMediaOutputDeviceIdState] = useState<string>(
+    () => localStorage.getItem("voxply.mediaOutputDeviceId") ?? ""
+  );
   const [adminVoiceMutes, setAdminVoiceMutes] = useState<VoiceMuteInfo[]>([]);
   const voiceMutedKeys = useMemo(
     () => new Set(adminVoiceMutes.map((v) => v.target_public_key)),
@@ -125,6 +130,24 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     } catch (e) {
       console.error("Failed to load voice settings:", e);
     }
+
+    // Enumerate browser audio output devices for screen share audio routing.
+    try {
+      if (navigator.mediaDevices?.enumerateDevices) {
+        const all = await navigator.mediaDevices.enumerateDevices();
+        const outputs = all
+          .filter((d) => d.kind === "audiooutput" && d.deviceId !== "")
+          .map((d) => ({ deviceId: d.deviceId, label: d.label || d.deviceId }));
+        setMediaOutputDevices(outputs);
+      }
+    } catch {
+      // enumerateDevices not available — silently skip
+    }
+  }
+
+  function setMediaOutputDeviceId(id: string) {
+    setMediaOutputDeviceIdState(id);
+    localStorage.setItem("voxply.mediaOutputDeviceId", id);
   }
 
   async function persistVoiceSettings(
@@ -317,6 +340,9 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     pttKey,
     audioInputs,
     audioOutputs,
+    mediaOutputDevices,
+    mediaOutputDeviceId,
+    setMediaOutputDeviceId,
     micTesting,
     micLevel,
     adminVoiceMutes,

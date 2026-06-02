@@ -155,6 +155,7 @@ interface Props {
   slashCommands?: SlashCommandEntry[];
   activeScreenShares: ActiveStream[];
   screenShareViewerRef: React.RefObject<ScreenShareViewerRef | null>;
+  mediaOutputDeviceId?: string;
   sharing: boolean;
   shareKbps: number;
   onStopShare: () => void;
@@ -185,7 +186,7 @@ export function ContentArea({
   onSetUserContextMenu, onSetEditingDraft, onInputTextChange, onKeyDown,
   onOpenImage, onToast, onError,
   slashCommands = [],
-  activeScreenShares, screenShareViewerRef,
+  activeScreenShares, screenShareViewerRef, mediaOutputDeviceId,
   sharing, shareKbps, onStopShare,
   onComponentInteract,
   assertiveAnnouncement = "",
@@ -601,6 +602,7 @@ export function ContentArea({
               <ScreenShareViewer
                 ref={screenShareViewerRef}
                 streams={activeScreenShares}
+                mediaOutputDeviceId={mediaOutputDeviceId}
               />
             )}
             {sharing && (

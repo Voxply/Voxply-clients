@@ -16,6 +16,7 @@ export interface ScreenShareViewerRef {
 
 interface Props {
   streams: ActiveStream[];
+  mediaOutputDeviceId?: string;
 }
 
 interface StreamState {
@@ -27,7 +28,7 @@ interface StreamState {
 }
 
 const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
-  ({ streams }, ref) => {
+  ({ streams, mediaOutputDeviceId }, ref) => {
     const streamStates = useRef<Map<string, StreamState>>(new Map());
     const videoRefs = useRef<Map<string, HTMLVideoElement | null>>(new Map());
     const webrtcStreams = useRef<Map<string, MediaStream>>(new Map());
@@ -154,6 +155,19 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
         }
       }
     }, [streams]);
+
+    // Apply the selected audio output device to all video elements whenever it changes.
+    useEffect(() => {
+      if (!mediaOutputDeviceId) return;
+      for (const [, el] of videoRefs.current) {
+        if (el && "setSinkId" in el) {
+          // setSinkId is a non-standard extension; cast to any to avoid TS complaints.
+          (el as HTMLVideoElement & { setSinkId(id: string): Promise<void> })
+            .setSinkId(mediaOutputDeviceId)
+            .catch(() => {});
+        }
+      }
+    }, [mediaOutputDeviceId, streams]);
 
     const mainStream = streams.find((s) => s.kind === "screen") ?? streams[0] ?? null;
     const webcamStream = streams.find((s) => s.kind === "webcam") ?? null;

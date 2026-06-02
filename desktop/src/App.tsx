@@ -3189,6 +3189,9 @@ function App() {
               voice.setVoiceOutputDevice(v);
               voice.persistVoiceSettings(voice.voiceInputDevice, v, voice.vadThreshold);
             }}
+            mediaOutputDevices={voice.mediaOutputDevices}
+            mediaOutputDeviceId={voice.mediaOutputDeviceId}
+            onMediaOutputDeviceChange={voice.setMediaOutputDeviceId}
             vadThreshold={voice.vadThreshold}
             onVadChange={(v) => {
               voice.setVadThreshold(v);
@@ -3469,6 +3472,7 @@ function App() {
                   onError={setError}
                   activeScreenShares={voice.activeScreenShares}
                   screenShareViewerRef={voice.screenShareViewerRef}
+                  mediaOutputDeviceId={voice.mediaOutputDeviceId || undefined}
                   sharing={voice.sharing}
                   shareKbps={voice.shareKbps}
                   onStopShare={voice.stopShare}
