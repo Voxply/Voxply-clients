@@ -105,7 +105,10 @@ export function SortableChannelItem({
       >
         {unread && <span className="channel-unread-dot" aria-hidden="true" />}
         <ChannelIcon icon={channel.icon} customIconSvg={channel.custom_icon_svg} />
-        {" "}{channel.name}
+        {channel.channel_type === "forum" && (
+          <span className="forum-type-badge" title="Forum channel" aria-label="Forum channel">📋</span>
+        )}
+        {channel.name}
         {muted && <span className="channel-muted-icon" title="Muted" aria-hidden="true">🔕</span>}
         {participants.length > 0 && (
           <span

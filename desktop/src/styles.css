@@ -1902,6 +1902,7 @@ select,
 .channel-item {
   display: flex;
   align-items: center;
+  gap: 6px;
 }
 
 .hub-icon.muted {
@@ -2004,6 +2005,48 @@ select,
   border: 1px solid var(--border);
   flex-shrink: 0;
 }
+
+.user-status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--bg-primary, #1a1a2e);
+  position: absolute;
+  bottom: -1px;
+  right: -1px;
+  flex-shrink: 0;
+}
+.user-status-dot.status-online  { background: var(--success, #3ba55d); }
+.user-status-dot.status-away    { background: #faa81a; }
+.user-status-dot.status-dnd     { background: var(--danger, #ed4245); }
+.user-status-dot.status-offline { background: var(--text-faint, #555); }
+
+.status-menu {
+  position: absolute;
+  bottom: 40px;
+  left: 0;
+  background: var(--surface-2, #2f3136);
+  border: 1px solid var(--border, #40444b);
+  border-radius: var(--r-sm, 4px);
+  padding: 4px;
+  z-index: 200;
+  min-width: 160px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+}
+.status-menu-item {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: var(--text-sm);
+  cursor: pointer;
+  border-radius: var(--r-xs, 2px);
+  text-align: left;
+}
+.status-menu-item:hover, .status-menu-item.active { background: var(--surface-hover); }
 
 .user-identity-details {
   flex: 1;
@@ -3902,6 +3945,13 @@ select:focus-visible {
 
 .channel-sublist .channel-item {
   padding-left: 20px;
+}
+
+.forum-type-badge {
+  font-size: 10px;
+  opacity: 0.7;
+  flex-shrink: 0;
+  line-height: 1;
 }
 
 /* ============================================================

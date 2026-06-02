@@ -1,4 +1,5 @@
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useState, useEffect, useMemo } from "react";
 import type { Channel, VoiceParticipant, VoiceMuteInfo, ScreenShareOpts } from "../types";
 import { useScreenShare } from "./useScreenShare";
@@ -58,10 +59,13 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
       } catch {}
     }
     tick();
-    const handle = setInterval(tick, 5000);
+    const handle = setInterval(tick, 1500);
+    let unlisten: (() => void) | undefined;
+    listen<void>("voice-update", () => { if (!cancelled) tick(); }).then((fn) => { unlisten = fn; });
     return () => {
       cancelled = true;
       clearInterval(handle);
+      unlisten?.();
     };
   }, [activeHubId]);
 

@@ -1,4 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+
+type UserStatus = "online" | "away" | "dnd" | "offline";
 import {
   DndContext,
   DragEndEvent,
@@ -88,6 +90,8 @@ interface Props {
   onScreenShare: () => void;
   dndActive: boolean;
   onToggleDnd: () => void;
+  userStatus: UserStatus;
+  onStatusChange: (s: UserStatus) => void;
 }
 
 export function ChannelSidebar({
@@ -106,6 +110,7 @@ export function ChannelSidebar({
   onSelectAllianceChannel, onSelectConversation,
   onOpenFriends, onToggleSelfMute, onToggleSelfDeafen, onOpenSettings,
   onDragEnd, onToggleHideSilenced, sharing, onScreenShare, dndActive, onToggleDnd,
+  userStatus, onStatusChange,
 }: Props) {
   const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -114,6 +119,7 @@ export function ChannelSidebar({
   const hubHeaderRef = useRef<HTMLDivElement>(null);
   const [channelFocusIndex, setChannelFocusIndex] = useState(0);
   const channelItemRefs = useRef<(HTMLElement | null)[]>([]);
+  const [showStatusMenu, setShowStatusMenu] = useState(false);
 
   useEffect(() => {
     if (!hubDropdownOpen) return;
@@ -549,20 +555,29 @@ export function ChannelSidebar({
         )}
 
         <div className="user-identity">
-          <div className="user-identity-avatar" />
-          <div className="user-identity-details">
+          <div style={{ position: "relative", flexShrink: 0 }}>
+            <div className="user-identity-avatar" />
+            <span className={`user-status-dot status-${userStatus}`} />
+          </div>
+          <div className="user-identity-details" style={{ cursor: "pointer" }} onClick={() => setShowStatusMenu((v) => !v)}>
             <span className="user-identity-name" title={publicKey ?? undefined}>
               {myDisplayName || publicKey?.slice(0, 12) || "You"}
             </span>
+            {showStatusMenu && (
+              <div className="status-menu" onMouseLeave={() => setShowStatusMenu(false)}>
+                {(["online", "away", "dnd", "offline"] as const).map((s) => (
+                  <button
+                    key={s}
+                    className={`status-menu-item ${userStatus === s ? "active" : ""}`}
+                    onClick={(e) => { e.stopPropagation(); onStatusChange(s); setShowStatusMenu(false); }}
+                  >
+                    <span className={`user-status-dot status-${s}`} style={{ marginRight: 6, position: "static" }} />
+                    {s === "online" ? "Online" : s === "away" ? "Away" : s === "dnd" ? "Do Not Disturb" : "Offline"}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
-          <button
-            onClick={onToggleDnd}
-            className={`btn-icon-gear ${dndActive ? "active" : ""}`}
-            aria-pressed={dndActive}
-            title={dndActive ? "Quiet hours active — click to disable" : "Enable quiet hours (DND)"}
-          >
-            🌙
-          </button>
           <button onClick={onOpenSettings} className="btn-icon-gear" title={t("settings.title")}>
             ⚙
           </button>

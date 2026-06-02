@@ -163,12 +163,22 @@ function App() {
   }
 
   const [dndActive, setDndActive] = useState(false);
+  const [userStatus, setUserStatus] = useState<"online" | "away" | "dnd" | "offline">("online");
 
   function toggleDnd() {
     setDndActive((prev) => {
       invoke("save_dnd_settings", { active: !prev }).catch(() => {});
       return !prev;
     });
+  }
+
+  function handleStatusChange(s: "online" | "away" | "dnd" | "offline") {
+    setUserStatus(s);
+    const nextDnd = s === "dnd";
+    if (nextDnd !== dndActive) {
+      setDndActive(nextDnd);
+      invoke("save_dnd_settings", { active: nextDnd }).catch(() => {});
+    }
   }
 
 
@@ -3368,8 +3378,10 @@ function App() {
                   onToggleHideSilenced={() => setHideSilenced((v) => !v)}
                   sharing={voice.sharing}
                   onScreenShare={voice.handleScreenShare}
-                  dndActive={dndActive}
+                  dndActive={userStatus === "dnd"}
                   onToggleDnd={toggleDnd}
+                  userStatus={userStatus}
+                  onStatusChange={handleStatusChange}
                 />
                 <ContentArea
                   view={view}
