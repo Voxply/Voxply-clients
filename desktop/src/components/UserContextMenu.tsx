@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { User, PublicHubProfile } from "../types";
 import { formatPubkey } from "../utils/format";
 
@@ -23,6 +24,7 @@ export function UserContextMenu({
   menu, publicKey, blockedUsers, ignoredUsers, activeHubUrl,
   onClose, onDm, onAddFriend, onCopyKey, onToggleBlock, onToggleIgnore, onToast, onJoinHub,
 }: Props) {
+  const { t } = useTranslation();
   const { x, y, user } = menu;
   const [profile, setProfile] = useState<PublicHubProfile | null | "loading">("loading");
 
@@ -55,15 +57,15 @@ export function UserContextMenu({
         {user.public_key !== publicKey && (
           <>
             <button className="context-menu-item" onClick={() => onDm(user)}>
-              Direct message
+              {t("user.ctx.dm")}
             </button>
             <button className="context-menu-item" onClick={() => onAddFriend(user)}>
-              Add friend
+              {t("user.ctx.add_friend")}
             </button>
           </>
         )}
         <button className="context-menu-item" onClick={() => onCopyKey(user)}>
-          Copy public key
+          {t("user.ctx.copy_key")}
         </button>
         {user.public_key !== publicKey && (
           <>
@@ -73,10 +75,10 @@ export function UserContextMenu({
                 const wasIgnored = ignoredUsers.has(user.public_key);
                 onClose();
                 onToggleIgnore(user.public_key);
-                onToast(wasIgnored ? "No longer ignoring" : "Ignored. Their messages will be collapsed.");
+                onToast(wasIgnored ? t("user.ctx.unignore") : t("user.ctx.ignored_feedback"));
               }}
             >
-              {ignoredUsers.has(user.public_key) ? "Unignore user" : "Ignore user"}
+              {ignoredUsers.has(user.public_key) ? t("user.ctx.unignore") : t("user.ctx.ignore")}
             </button>
             <button
               className="context-menu-item"
@@ -84,16 +86,16 @@ export function UserContextMenu({
                 const wasBlocked = blockedUsers.has(user.public_key);
                 onClose();
                 onToggleBlock(user.public_key);
-                onToast(wasBlocked ? "Unblocked" : "Blocked. Their messages and mentions will be hidden.");
+                onToast(wasBlocked ? t("user.ctx.unblocked_feedback") : t("user.ctx.blocked_feedback"));
               }}
             >
-              {blockedUsers.has(user.public_key) ? "Unblock user" : "Block user"}
+              {blockedUsers.has(user.public_key) ? t("user.ctx.unblock") : t("user.ctx.block")}
             </button>
           </>
         )}
         {profile === "loading" && (
           <div className="muted" style={{ padding: "4px 12px", fontSize: "var(--text-sm)" }}>
-            Loading profile…
+            {t("user.ctx.loading_profile")}
           </div>
         )}
         {profile !== "loading" && profile !== null && profile.public_hubs.length > 0 && (

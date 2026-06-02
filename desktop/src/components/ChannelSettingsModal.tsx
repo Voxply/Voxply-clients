@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { Channel, HubIcon } from "../types";
 import { ChannelIcon } from "./Icons";
 import { ChannelIconPicker } from "./ChannelIconPicker";
@@ -32,6 +33,7 @@ interface Props {
 export function ChannelSettingsModal({
   channel, isAdmin, onSaveAppearance, onSaveDescription, onManageBans, onClose,
 }: Props) {
+  const { t } = useTranslation();
   const [tab, setTab] = useState<Tab>("settings");
 
   const [description, setDescription] = useState(channel.description ?? "");
@@ -117,14 +119,14 @@ export function ChannelSettingsModal({
             className={`hub-admin-tab ${tab === "settings" ? "active" : ""}`}
             onClick={() => setTab("settings")}
           >
-            Settings
+            {t("channel.settings.tab_settings")}
           </button>
           {isAdmin && (
             <button
               className={`hub-admin-tab ${tab === "moderation" ? "active" : ""}`}
               onClick={() => setTab("moderation")}
             >
-              Moderation
+              {t("channel.settings.tab_moderation")}
             </button>
           )}
         </div>
@@ -133,7 +135,7 @@ export function ChannelSettingsModal({
           <>
             {!channel.is_category && (
               <div className="settings-section">
-                <label className="settings-label">Description</label>
+                <label className="settings-label">{t("channel.settings.description")}</label>
                 <textarea
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
@@ -144,14 +146,14 @@ export function ChannelSettingsModal({
             )}
 
             <div className="settings-section">
-              <label className="settings-label">Custom SVG icon</label>
+              <label className="settings-label">{t("channel.appearance.custom_svg")}</label>
               <p className="muted">
                 Upload your own .svg file. Scripts and external references are
                 stripped automatically.
               </p>
               {hubIcons.length > 0 && (
                 <div className="hub-icon-library">
-                  <p className="muted" style={{ marginBottom: "6px" }}>Hub library</p>
+                  <p className="muted" style={{ marginBottom: "6px" }}>{t("channel.appearance.hub_library")}</p>
                   <div className="icon-picker-grid">
                     {hubIcons.map((hi) => {
                       const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(hi.svg_content)}`;
@@ -185,7 +187,7 @@ export function ChannelSettingsModal({
                       className="btn-secondary"
                       onClick={() => setCustomIconSvg(null)}
                     >
-                      Remove
+                      {t("modal.delete")}
                     </button>
                   </>
                 )}
@@ -194,7 +196,7 @@ export function ChannelSettingsModal({
                   className="btn-secondary"
                   onClick={() => fileRef.current?.click()}
                 >
-                  {customIconSvg ? "Replace SVG…" : "Upload SVG…"}
+                  {customIconSvg ? t("channel.appearance.replace_svg") : t("channel.appearance.upload_svg")}
                 </button>
                 <input
                   ref={fileRef}

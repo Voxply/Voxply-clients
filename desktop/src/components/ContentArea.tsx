@@ -52,6 +52,7 @@ interface SelectedAllianceChannel {
 }
 
 function IgnoredMessagePlaceholder() {
+  const { t } = useTranslation();
   const [revealed, setRevealed] = React.useState(false);
   return (
     <li className="message message-row message-ignored-placeholder">
@@ -61,7 +62,7 @@ function IgnoredMessagePlaceholder() {
           style={{ fontSize: "var(--text-xs)" }}
           onClick={() => setRevealed(true)}
         >
-          Message from ignored user — click to reveal
+          {t("message.ignored_placeholder")}
         </button>
       )}
     </li>
@@ -349,7 +350,7 @@ export function ContentArea({
               {view === "dms" && selectedConversation.conv_type === "group" && !groupDmAcknowledged ? (
                 <div className="dm-group-ack-overlay">
                   <div className="dm-group-ack-box">
-                    <p className="dm-group-ack-title">Group messages are not encrypted</p>
+                    <p className="dm-group-ack-title">{t("dm.group_warning_title")}</p>
                     <p className="dm-group-ack-body">
                       {t("dm.group_banner")}
                       {" "}{t("dm.group_banner_detail")}

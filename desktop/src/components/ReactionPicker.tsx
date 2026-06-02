@@ -1,4 +1,5 @@
 import { CSSProperties, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { EMOJI_CATALOG } from "../constants";
 import { loadRecentEmojis, pushRecentEmoji } from "../utils/recentEmoji";
 import { FocusTrap } from "./FocusTrap";
@@ -10,6 +11,7 @@ export function ReactionPicker({
 }: {
   onPick: (emoji: string) => void;
 }) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [popupStyle, setPopupStyle] = useState<CSSProperties>({});
   const [query, setQuery] = useState("");
@@ -68,7 +70,7 @@ export function ReactionPicker({
         ref={btnRef}
         className="reaction-add-btn"
         onClick={handleOpen}
-        title="Add reaction"
+        title={t("reaction.add")}
       >
         🙂+
       </button>
@@ -93,11 +95,11 @@ export function ReactionPicker({
                     handlePick(filtered[0][0]);
                   }
                 }}
-                placeholder="Search emoji…"
+                placeholder={t("reaction.search_placeholder")}
               />
               {!query && recents.length > 0 && (
                 <>
-                  <div className="reaction-picker-section-label">Recent</div>
+                  <div className="reaction-picker-section-label">{t("reaction.recent")}</div>
                   <div className="reaction-picker-grid reaction-picker-recents">
                     {recents.map((emoji) => (
                       <button
@@ -115,7 +117,7 @@ export function ReactionPicker({
               )}
               <div className="reaction-picker-grid">
                 {filtered.length === 0 ? (
-                  <span className="muted reaction-picker-empty">No matches</span>
+                  <span className="muted reaction-picker-empty">{t("reaction.no_matches")}</span>
                 ) : (
                   filtered.map(([emoji]) => (
                     <button

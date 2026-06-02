@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { Channel, HubIcon } from "../types";
 import { ChannelIcon } from "./Icons";
 import { ChannelIconPicker } from "./ChannelIconPicker";
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
+  const { t } = useTranslation();
   const [icon, setIcon] = useState<string | null>(channel.icon);
   const [color, setColor] = useState<string | null>(channel.color);
   const [customIconSvg, setCustomIconSvg] = useState<string | null>(channel.custom_icon_svg);
@@ -71,19 +73,19 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
       <FocusTrap>
       <div className="modal appearance-modal" onClick={(e) => e.stopPropagation()}>
         <h3>
-          Edit appearance —{" "}
+          {t("channel.appearance.title")} —{" "}
           {channel.is_category ? channel.name.toUpperCase() : `#${channel.name}`}
         </h3>
 
         <div className="settings-section">
-          <label className="settings-label">Custom SVG icon</label>
+          <label className="settings-label">{t("channel.appearance.custom_svg")}</label>
           <p className="muted">
             Upload your own .svg file. Scripts and external references are
             stripped automatically.
           </p>
           {hubIcons.length > 0 && (
             <div className="hub-icon-library">
-              <p className="muted" style={{ marginBottom: "6px" }}>Hub library</p>
+              <p className="muted" style={{ marginBottom: "6px" }}>{t("channel.appearance.hub_library")}</p>
               <div className="icon-picker-grid">
                 {hubIcons.map((hi) => {
                   const dataUri = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(hi.svg_content)}`;
@@ -117,7 +119,7 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
                   className="btn-secondary"
                   onClick={() => setCustomIconSvg(null)}
                 >
-                  Remove
+                  {t("modal.delete")}
                 </button>
               </>
             )}
@@ -126,7 +128,7 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
               className="btn-secondary"
               onClick={() => fileRef.current?.click()}
             >
-              {customIconSvg ? "Replace SVG…" : "Upload SVG…"}
+              {customIconSvg ? t("channel.appearance.replace_svg") : t("channel.appearance.upload_svg")}
             </button>
             <input
               ref={fileRef}
@@ -145,7 +147,7 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
 
         <div className="settings-section">
           <label className="settings-label">
-            Predefined icon{customIconSvg ? " (overridden by custom SVG)" : ""}
+            {t("channel.appearance.predefined")}{customIconSvg ? " (overridden by custom SVG)" : ""}
           </label>
           <div style={{ opacity: customIconSvg ? 0.4 : 1, pointerEvents: customIconSvg ? "none" : "auto" }}>
             <ChannelIconPicker value={icon} onChange={setIcon} />
@@ -154,13 +156,13 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
 
         {channel.is_category && (
           <div className="settings-section">
-            <label className="settings-label">Accent color</label>
+            <label className="settings-label">{t("channel.appearance.color")}</label>
             <div className="color-swatch-row">
               <button
                 type="button"
                 className={`color-swatch color-swatch-none ${color === null ? "selected" : ""}`}
                 onClick={() => setColor(null)}
-                title="None"
+                title={t("channel.appearance.no_color")}
               >
                 ✕
               </button>
@@ -180,10 +182,10 @@ export function ChannelAppearanceModal({ channel, onSave, onClose }: Props) {
 
         <div className="modal-actions">
           <button className="btn-secondary" onClick={onClose}>
-            Cancel
+            {t("modal.cancel")}
           </button>
           <button onClick={() => { onSave(icon, color, customIconSvg); onClose(); }}>
-            Save
+            {t("modal.save")}
           </button>
         </div>
       </div>

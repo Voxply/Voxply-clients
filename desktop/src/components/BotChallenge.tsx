@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { ChallengePrompt, ChallengeResult } from "../types";
 
 export interface BotChallengeProps {
@@ -12,6 +13,7 @@ export interface BotChallengeProps {
 type ChallengePhase = "loading" | "click" | "puzzle" | "submitting" | "passed" | "error";
 
 export function BotChallenge({ hubUrl, pubkey, onPassed, onCancel }: BotChallengeProps) {
+  const { t } = useTranslation();
   const [phase, setPhase] = useState<ChallengePhase>("loading");
   const [prompt, setPrompt] = useState<ChallengePrompt | null>(null);
   const [answer, setAnswer] = useState("");
@@ -111,35 +113,35 @@ export function BotChallenge({ hubUrl, pubkey, onPassed, onCancel }: BotChalleng
     <div className="modal-overlay" onClick={onCancel}>
       <div className="modal challenge-modal" onClick={(e) => e.stopPropagation()}>
         {phase === "loading" && (
-          <p className="muted">Loading…</p>
+          <p className="muted">{t("modal.loading")}</p>
         )}
 
         {phase === "error" && (
           <>
-            <h3>Verification unavailable</h3>
+            <h3>{t("challenge.unavailable")}</h3>
             <p className="muted">{fetchError}</p>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={onCancel}>Cancel</button>
-              <button onClick={fetchPrompt}>Retry</button>
+              <button className="btn-secondary" onClick={onCancel}>{t("modal.cancel")}</button>
+              <button onClick={fetchPrompt}>{t("modal.retry")}</button>
             </div>
           </>
         )}
 
         {phase === "click" && (
           <div className="challenge-click-content">
-            <p className="muted challenge-subtext">Confirm you're not a bot to continue.</p>
+            <p className="muted challenge-subtext">{t("challenge.prompt")}</p>
             <button className="challenge-not-a-bot-btn" onClick={handleClick}>
-              I'm not a bot
+              {t("challenge.confirm")}
             </button>
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={onCancel}>Cancel</button>
+              <button className="btn-secondary" onClick={onCancel}>{t("modal.cancel")}</button>
             </div>
           </div>
         )}
 
         {phase === "puzzle" && prompt && (
           <>
-            <h3>Quick check</h3>
+            <h3>{t("challenge.quick_check")}</h3>
             {prompt.prompt_svg && (
               <div
                 className="challenge-svg-wrap"
@@ -152,32 +154,32 @@ export function BotChallenge({ hubUrl, pubkey, onPassed, onCancel }: BotChalleng
               value={answer}
               onChange={(e) => setAnswer(e.target.value)}
               onKeyDown={(e) => { if (e.key === "Enter") handlePuzzleSubmit(); }}
-              placeholder="Your answer"
+              placeholder={t("challenge.answer_placeholder")}
               autoFocus
             />
             <div className="modal-actions">
-              <button className="btn-secondary" onClick={onCancel}>Cancel</button>
+              <button className="btn-secondary" onClick={onCancel}>{t("modal.cancel")}</button>
               <button
                 className="btn-secondary"
                 onClick={fetchPrompt}
                 style={{ marginRight: "auto" }}
               >
-                New puzzle
+                {t("challenge.new_puzzle")}
               </button>
               <button onClick={handlePuzzleSubmit} disabled={!answer.trim()}>
-                Submit
+                {t("modal.send")}
               </button>
             </div>
           </>
         )}
 
         {phase === "submitting" && (
-          <p className="muted">Verifying…</p>
+          <p className="muted">{t("challenge.verifying")}</p>
         )}
 
         {phase === "passed" && (
           <div className="challenge-passed">
-            <span className="challenge-passed-check">&#10003;</span> Verified
+            <span className="challenge-passed-check">&#10003;</span> {t("challenge.verified")}
           </div>
         )}
       </div>

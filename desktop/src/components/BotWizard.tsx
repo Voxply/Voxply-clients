@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { BotAdminInfo, BotCreatedResult } from "../types";
 
 interface BotWizardProps {
@@ -9,6 +10,7 @@ interface BotWizardProps {
 }
 
 export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
+  const { t } = useTranslation();
   const [stage, setStage] = useState<"name" | "token">("name");
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -54,19 +56,19 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
   return (
     <div className="modal-overlay" onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}>
       <div className="modal">
-        <h3>{stage === "name" ? "Create Bot" : "Bot Created"}</h3>
+        <h3>{stage === "name" ? t("bot.wizard.title_create") : t("bot.wizard.title_created")}</h3>
 
         {stage === "name" && (
           <>
             {error && <p style={{ color: "var(--color-error, red)", marginBottom: "var(--space-2)" }}>{error}</p>}
             <div className="settings-section">
-              <label className="settings-label">Bot display name</label>
+              <label className="settings-label">{t("bot.wizard.name_label")}</label>
               <input
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
                 onKeyDown={(e) => { if (e.key === "Enter") handleCreate(); }}
-                placeholder="My Bot"
+                placeholder={t("bot.wizard.name_placeholder")}
                 autoFocus
               />
             </div>
@@ -75,9 +77,9 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
                 onClick={handleCreate}
                 disabled={!displayName.trim() || loading}
               >
-                {loading ? "Creating…" : "Create"}
+                {loading ? t("bot.wizard.creating") : t("bot.wizard.create")}
               </button>
-              <button className="btn-secondary" onClick={onClose}>Cancel</button>
+              <button className="btn-secondary" onClick={onClose}>{t("modal.cancel")}</button>
             </div>
           </>
         )}
@@ -85,12 +87,12 @@ export function BotWizard({ hubUrl, onCreated, onClose }: BotWizardProps) {
         {stage === "token" && result && (
           <>
             <p className="bot-token-warning">
-              This token is only shown once. Copy it now — you won't be able to retrieve it later.
+              {t("bot.wizard.token_warning")}
             </p>
             <code className="bot-token-box">{result.token}</code>
             <div className="modal-actions">
-              <button onClick={handleCopy}>{copied ? "Copied!" : "Copy Token"}</button>
-              <button className="btn-secondary" onClick={handleDone}>Done</button>
+              <button onClick={handleCopy}>{copied ? t("bot.wizard.copy_copied") : t("bot.wizard.copy_token")}</button>
+              <button className="btn-secondary" onClick={handleDone}>{t("modal.confirm")}</button>
             </div>
           </>
         )}

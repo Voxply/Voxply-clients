@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { useTranslation } from "react-i18next";
 import type { LobbyStatus, SurveySubmitResult } from "../types";
 import { SurveyComponent } from "./Survey";
 
@@ -12,6 +13,7 @@ export interface LobbyProps {
 type LobbyViewState = "loading" | "active" | "promoted";
 
 export function Lobby({ hubUrl, hubName, onPromoted }: LobbyProps) {
+  const { t } = useTranslation();
   const [viewState, setViewState] = useState<LobbyViewState>("loading");
   const [lobbyStatus, setLobbyStatus] = useState<LobbyStatus | null>(null);
   const [welcomeMd, setWelcomeMd] = useState<string | null>(null);
@@ -93,7 +95,7 @@ export function Lobby({ hubUrl, hubName, onPromoted }: LobbyProps) {
     return (
       <div className="lobby-view">
         <div className="lobby-card">
-          <p className="muted">Loading…</p>
+          <p className="muted">{t("modal.loading")}</p>
         </div>
       </div>
     );
@@ -103,8 +105,8 @@ export function Lobby({ hubUrl, hubName, onPromoted }: LobbyProps) {
     return (
       <div className="lobby-view">
         <div className="lobby-card">
-          <div className="lobby-promoted-badge">Verification complete</div>
-          <p className="muted">Welcome to {hubName}.</p>
+          <div className="lobby-promoted-badge">{t("lobby.verified_title")}</div>
+          <p className="muted">{t("lobby.welcome", { hub: hubName })}</p>
         </div>
       </div>
     );
@@ -124,7 +126,7 @@ export function Lobby({ hubUrl, hubName, onPromoted }: LobbyProps) {
     <div className="lobby-view">
       <div className="lobby-card">
         <h2 className="lobby-hub-name">{hubName}</h2>
-        <p className="lobby-subtitle muted">You're in the lobby</p>
+        <p className="lobby-subtitle muted">{t("lobby.title")}</p>
 
         {welcomeMd && (
           <pre className="lobby-welcome-md">{welcomeMd}</pre>
@@ -140,38 +142,38 @@ export function Lobby({ hubUrl, hubName, onPromoted }: LobbyProps) {
 
         {isPendingSurveyApproval && (
           <div className="lobby-pending-notice">
-            <p>Your answers are with the admins. You'll get access once they approve.</p>
+            <p>{t("lobby.pending_approval")}</p>
           </div>
         )}
 
         {!noPoW && !isPendingSurveyApproval && (
           <div className="lobby-progress-card">
             <p className="lobby-progress-label">
-              Verifying… level {current} / {required} required
+              {t("lobby.verifying", { current, required })}
             </p>
             <div className="lobby-progress-bar">
               <div className="lobby-progress-fill" style={{ width: `${pct}%` }} />
             </div>
             {etaMin > 0 && (
-              <p className="lobby-eta muted">~{etaMin} min remaining</p>
+              <p className="lobby-eta muted">{t("lobby.eta_min", { min: etaMin })}</p>
             )}
             <div className="lobby-progress-actions">
               {paused ? (
-                <button onClick={() => setPaused(false)}>Resume</button>
+                <button onClick={() => setPaused(false)}>{t("lobby.resume")}</button>
               ) : (
-                <button className="btn-secondary" onClick={() => setPaused(true)}>Pause</button>
+                <button className="btn-secondary" onClick={() => setPaused(true)}>{t("lobby.pause")}</button>
               )}
             </div>
           </div>
         )}
 
         {noPoW && !isPendingSurveyApproval && !surveyDone && (
-          <p className="lobby-waiting muted">Waiting for approval…</p>
+          <p className="lobby-waiting muted">{t("lobby.waiting")}</p>
         )}
 
         {!noPoW && (
           <p className="lobby-footer muted">
-            You'll be let in automatically once verification finishes.
+            {t("lobby.auto_promote")}
           </p>
         )}
       </div>
