@@ -6,6 +6,8 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { invoke } from "@tauri-apps/api/core";
+import { emit, listen } from "@tauri-apps/api/event";
 import type { ActiveStream } from "../types";
 
 export interface ScreenShareViewerRef {
@@ -34,6 +36,10 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
     const webrtcStreams = useRef<Map<string, MediaStream>>(new Map());
     const [volumes, setVolumes] = useState<Record<string, number>>({});
     const [pipStreamId, setPipStreamId] = useState<string | null>(null);
+    const [osPipOpen, setOsPipOpen] = useState(false);
+    const osPipOpenRef = useRef(false);
+    const osPipStreamId = useRef<string | null>(null);
+    const unlistenPipClose = useRef<(() => void) | null>(null);
 
     const pipSupported =
       typeof document !== "undefined" && "pictureInPictureEnabled" in document;
@@ -53,6 +59,44 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
         // Browser denied PiP (not playing yet, or feature not available) — ignore
       }
     }, [pipSupported]);
+
+    const toggleOsPip = useCallback(async (streamId: string) => {
+      if (osPipOpenRef.current) {
+        await invoke("close_pip_window").catch(() => {});
+        setOsPipOpen(false);
+        osPipOpenRef.current = false;
+        osPipStreamId.current = null;
+        return;
+      }
+
+      try {
+        await invoke("open_pip_window");
+        setOsPipOpen(true);
+        osPipOpenRef.current = true;
+        osPipStreamId.current = streamId;
+      } catch {
+        return;
+      }
+
+      if (unlistenPipClose.current) {
+        unlistenPipClose.current();
+        unlistenPipClose.current = null;
+      }
+      const unlisten = await listen("pip-close", () => {
+        setOsPipOpen(false);
+        osPipOpenRef.current = false;
+        osPipStreamId.current = null;
+      });
+      unlistenPipClose.current = unlisten;
+    }, []);
+
+    useEffect(() => {
+      return () => {
+        if (unlistenPipClose.current) {
+          unlistenPipClose.current();
+        }
+      };
+    }, []);
 
     function drainQueue(streamId: string) {
       const s = streamStates.current.get(streamId);
@@ -81,6 +125,10 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
 
         s.queue.push(data);
         drainQueue(streamId);
+
+        if (osPipStreamId.current === streamId && osPipOpenRef.current) {
+          emit("pip-stream-chunk", { data: Array.from(new Uint8Array(data)) }).catch(() => {});
+        }
       },
 
       stopStream(streamId) {
@@ -95,6 +143,10 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
         webrtcStreams.current.delete(streamId);
         const el = videoRefs.current.get(streamId);
         if (el) { el.srcObject = null; }
+
+        if (osPipStreamId.current === streamId) {
+          emit("pip-stream-stop", null).catch(() => {});
+        }
       },
 
       attachStream(streamId, stream) {
@@ -223,9 +275,20 @@ const ScreenShareViewer = forwardRef<ScreenShareViewerRef, Props>(
                   title={pipStreamId === mainStream.stream_id ? "Exit picture-in-picture" : "Pop out (picture-in-picture)"}
                   onClick={() => enterPip(mainStream.stream_id)}
                 >
-                  {pipStreamId === mainStream.stream_id ? "⊠" : "⧉"}
+                  {pipStreamId === mainStream.stream_id ? "⊞" : "⧉"}
                 </button>
               )}
+              <button
+                className="pip-btn pip-btn--os"
+                style={{
+                  right: pipSupported ? "calc(var(--space-2) + 34px)" : "var(--space-2)",
+                  opacity: osPipOpen ? 1 : undefined,
+                }}
+                title={osPipOpen ? "Pop in" : "Pop out (window)"}
+                onClick={() => toggleOsPip(mainStream.stream_id)}
+              >
+                {osPipOpen ? "⬇" : "⬆"}
+              </button>
               {audioStream && (
                 <div className="screen-share-volume">
                   <input

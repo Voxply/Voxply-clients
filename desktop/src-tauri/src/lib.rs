@@ -5546,6 +5546,37 @@ async fn survey_admin_responses(
     resp.json().await.map_err(|e| format!("Invalid response: {e}"))
 }
 
+#[tauri::command]
+async fn open_pip_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("screen-share-pip") {
+        w.show().ok();
+        w.set_focus().ok();
+        return Ok(());
+    }
+    tauri::WebviewWindowBuilder::new(
+        &app,
+        "screen-share-pip",
+        tauri::WebviewUrl::App("pip.html".into()),
+    )
+    .title("Voxply \u{2014} stream")
+    .inner_size(320.0, 180.0)
+    .min_inner_size(160.0, 90.0)
+    .always_on_top(true)
+    .decorations(false)
+    .resizable(true)
+    .build()
+    .map_err(|e| format!("Failed to open PiP: {e}"))?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn close_pip_window(app: tauri::AppHandle) -> Result<(), String> {
+    if let Some(w) = app.get_webview_window("screen-share-pip") {
+        w.close().map_err(|e| format!("{e}"))?;
+    }
+    Ok(())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{Menu, MenuItem};
@@ -5834,6 +5865,8 @@ pub fn run() {
             add_hub_by_url,
             export_identity_backup,
             import_identity_backup,
+            open_pip_window,
+            close_pip_window,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
