@@ -4991,6 +4991,225 @@ async fn create_hub_on_farm(
     resp.json().await.map_err(|e| format!("Invalid response: {e}"))
 }
 
+// ---------------------------------------------------------------------------
+// Recovery contacts + key rotation commands
+// ---------------------------------------------------------------------------
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContact {
+    pubkey: String,
+    display_name: Option<String>,
+    added_at: i64,
+    hub_url: String,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContactEntry {
+    pubkey: String,
+    added_at: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RecoveryContactsResponse {
+    owner_pubkey: String,
+    contacts: Vec<RecoveryContactEntry>,
+    threshold: u32,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct RotationRequest {
+    id: String,
+    new_pubkey: String,
+    hub_url: String,
+    attestations: Vec<serde_json::Value>,
+    threshold: i64,
+    submitted_at: i64,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct MyRotationRequestResponse {
+    id: String,
+    new_pubkey: String,
+    status: String,
+    created_at: i64,
+    attestation_count: i64,
+    threshold: i64,
+}
+
+#[derive(Serialize, Deserialize)]
+struct SetContactsPayload {
+    contacts: Vec<String>,
+    threshold: u32,
+}
+
+#[tauri::command]
+async fn list_recovery_contacts(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<RecoveryContact>, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/recovery/contacts"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    let cr: RecoveryContactsResponse = resp.json().await.map_err(|e| format!("Invalid: {e}"))?;
+    Ok(cr.contacts.into_iter().map(|c| RecoveryContact {
+        pubkey: c.pubkey,
+        display_name: None,
+        added_at: c.added_at,
+        hub_url: hub_url.clone(),
+    }).collect())
+}
+
+#[tauri::command]
+async fn add_recovery_contact(
+    hub_url: String,
+    pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<RecoveryContact, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    // Fetch existing contacts first.
+    let resp = state
+        .http_client
+        .get(format!("{base}/recovery/contacts"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    let cr: RecoveryContactsResponse = resp.json().await.map_err(|e| format!("Invalid: {e}"))?;
+    let mut contacts: Vec<String> = cr.contacts.iter().map(|c| c.pubkey.clone()).collect();
+    if !contacts.contains(&pubkey) {
+        contacts.push(pubkey.clone());
+    }
+    let threshold = cr.threshold.max(1);
+    // PUT the updated list.
+    let resp = state
+        .http_client
+        .put(format!("{base}/recovery/contacts"))
+        .bearer_auth(&token)
+        .json(&SetContactsPayload { contacts, threshold })
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_secs() as i64)
+        .unwrap_or(0);
+    Ok(RecoveryContact { pubkey, display_name: None, added_at: now, hub_url })
+}
+
+#[tauri::command]
+async fn remove_recovery_contact(
+    hub_url: String,
+    pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .delete(format!("{base}/recovery/contacts/{pubkey}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn submit_rotation_request(
+    hub_url: String,
+    new_pubkey: String,
+    state: State<'_, AppState>,
+) -> Result<RotationRequest, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    // Load the identity to get the current user's public key (old_pubkey for rotation).
+    let old_pubkey = {
+        let path = crate::identity::Identity::default_path()
+            .map_err(|e| format!("Identity path: {e}"))?;
+        let identity = crate::identity::Identity::load(&path)
+            .map_err(|e| format!("Load identity: {e}"))?;
+        identity.public_key_hex()
+    };
+    let base = hub_url.trim_end_matches('/');
+    let body = serde_json::json!({
+        "old_pubkey": old_pubkey,
+        "new_pubkey": new_pubkey,
+        "attestations": []
+    });
+    let resp = state
+        .http_client
+        .post(format!("{base}/recovery/rotate-key"))
+        .bearer_auth(&token)
+        .json(&body)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    // The rotate-key endpoint returns id/old_pubkey/new_pubkey/status/created_at/attestation_count
+    // but no threshold; parse with serde_json::Value to avoid a dedicated struct.
+    let r: serde_json::Value = resp.json().await.map_err(|e| format!("Invalid: {e}"))?;
+    let id = r["id"].as_str().unwrap_or("").to_string();
+    let new_pk = r["new_pubkey"].as_str().unwrap_or("").to_string();
+    let created_at = r["created_at"].as_i64().unwrap_or(0);
+    Ok(RotationRequest {
+        id,
+        new_pubkey: new_pk,
+        hub_url,
+        attestations: vec![],
+        threshold: 0,
+        submitted_at: created_at,
+    })
+}
+
+#[tauri::command]
+async fn list_rotation_requests(
+    hub_url: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<RotationRequest>, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let base = hub_url.trim_end_matches('/');
+    let resp = state
+        .http_client
+        .get(format!("{base}/recovery/requests"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| format!("Failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    let rows: Vec<MyRotationRequestResponse> =
+        resp.json().await.map_err(|e| format!("Invalid: {e}"))?;
+    Ok(rows.into_iter().map(|r| RotationRequest {
+        id: r.id,
+        new_pubkey: r.new_pubkey,
+        hub_url: hub_url.clone(),
+        attestations: vec![],
+        threshold: r.threshold,
+        submitted_at: r.created_at,
+    }).collect())
+}
+
 /// Connect to a hub by URL without an invite code. Wraps `add_hub`.
 #[tauri::command]
 async fn add_hub_by_url(
@@ -5470,6 +5689,11 @@ pub fn run() {
             get_farm_users,
             revoke_farm_user_sessions,
             create_hub_on_farm,
+            list_recovery_contacts,
+            add_recovery_contact,
+            remove_recovery_contact,
+            submit_rotation_request,
+            list_rotation_requests,
             add_hub_by_url,
         ])
         .run(tauri::generate_context!())
