@@ -50,6 +50,7 @@ import { MAX_ATTACHMENT_BYTES, DEMO_HUB_URL } from "./constants";
 import { formatPubkey, mentionsName, newProfileId } from "./utils/format";
 import { playMentionPing } from "./utils/audio";
 import { readFileAsB64 } from "./utils/files";
+import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import { buildChannelTree, flattenTree, descendantIds, computeDepth } from "./utils/channels";
 import { useReconnectBackoff } from "./hooks/useReconnectBackoff";
 import { Lightbox } from "./components/Lightbox";
@@ -84,6 +85,8 @@ import { SurveyComponent } from "./components/Survey";
 function App() {
   // Multi-hub state
   const [hubs, setHubs] = useState<Hub[]>([]);
+  const hubsRef = useRef<Hub[]>([]);
+  useEffect(() => { hubsRef.current = hubs; }, [hubs]);
   const [activeHubId, setActiveHubId] = useState<string | null>(null);
   const [showAddHub, setShowAddHub] = useState(false);
   const [hubScope, setHubScope] = useState<Record<string, "lobby" | "member">>({});
@@ -838,6 +841,61 @@ function App() {
     mentionPingRef.current = mentionPingEnabled;
   }, [mentionPingEnabled]);
 
+  type PendingNotifEntry = {
+    hubName: string;
+    channels: Map<string, { name: string; count: number; isMention: boolean }>;
+    timer: ReturnType<typeof setTimeout>;
+  };
+  const pendingNotifsRef = useRef<Map<string, PendingNotifEntry>>(new Map());
+
+  function flushNotif(hubId: string) {
+    const entry = pendingNotifsRef.current.get(hubId);
+    if (!entry) return;
+    pendingNotifsRef.current.delete(hubId);
+    if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+
+    const channelList = [...entry.channels.values()];
+    const totalCount = channelList.reduce((n, c) => n + c.count, 0);
+    const hasMention = channelList.some((c) => c.isMention);
+
+    let title: string;
+    let body: string;
+    if (channelList.length === 1) {
+      const ch = channelList[0];
+      title = hasMention ? `Mentioned in #${ch.name}` : `New messages in #${ch.name}`;
+      body = `${totalCount} new message${totalCount > 1 ? "s" : ""} in ${entry.hubName}`;
+    } else {
+      const names = channelList.map((c) => `#${c.name}`).join(", ");
+      title = hasMention ? `Mentions in ${entry.hubName}` : `New messages in ${entry.hubName}`;
+      body = `${totalCount} new message${totalCount > 1 ? "s" : ""} in ${names}`;
+    }
+
+    try { new Notification(title, { body }); } catch {}
+  }
+
+  function queueNotif(hubId: string, hubName: string, channelId: string, channelName: string, isMention: boolean) {
+    const map = pendingNotifsRef.current;
+    const existing = map.get(hubId);
+    if (existing) {
+      clearTimeout(existing.timer);
+      const ch = existing.channels.get(channelId);
+      if (ch) {
+        ch.count += 1;
+        ch.isMention = ch.isMention || isMention;
+      } else {
+        existing.channels.set(channelId, { name: channelName, count: 1, isMention });
+      }
+      existing.timer = setTimeout(() => flushNotif(hubId), 3000);
+    } else {
+      const channels = new Map<string, { name: string; count: number; isMention: boolean }>();
+      channels.set(channelId, { name: channelName, count: 1, isMention });
+      map.set(hubId, {
+        hubName,
+        channels,
+        timer: setTimeout(() => flushNotif(hubId), 3000),
+      });
+    }
+  }
 
   // Friends
   const [showFriends, setShowFriends] = useState(false);
@@ -1052,24 +1110,11 @@ function App() {
 
             if (shouldNotify) {
               if (mentionPingRef.current) playMentionPing();
-              if (
-                typeof Notification !== "undefined" &&
-                Notification.permission === "granted"
-              ) {
-                const sender =
-                  message.sender_name || formatPubkey(message.sender);
-                try {
-                  const channelName =
-                    channelsRef.current.find((c) => c.id === channel_id)?.name ??
-                    channel_id;
-                  new Notification(
-                    isMention
-                      ? `${sender} mentioned you`
-                      : `New message in #${channelName}`,
-                    { body: message.content.slice(0, 140) },
-                  );
-                } catch {}
-              }
+              const channelName =
+                channelsRef.current.find((c) => c.id === channel_id)?.name ?? channel_id;
+              const hubEntry = hubsRef.current.find((h) => h.hub_id === hub_id);
+              const hubName = hubEntry?.hub_name ?? hub_id;
+              queueNotif(hub_id, hubName, channel_id, channelName, isMention);
             }
           }
         )
@@ -2214,7 +2259,12 @@ function App() {
     setSelectedChannel(channel);
     setMessages([]);
     setTypingByKey({});
-    if (activeHubId) clearUnread(activeHubId, channel.id);
+    if (activeHubId) {
+      clearUnread(activeHubId, channel.id);
+      setInputText(loadDraft(`${activeHubId}/${channel.id}`));
+    } else {
+      setInputText("");
+    }
     try {
       const msgs = await invoke<Message[]>("get_messages", {
         channelId: channel.id,
@@ -2383,6 +2433,7 @@ function App() {
     const reply = replyTarget;
     if (!content.trim() && attachments.length === 0) return;
     setInputText("");
+    if (activeHubId) clearDraft(`${activeHubId}/${selectedChannel.id}`);
     setPendingAttachments([]);
     setReplyTarget(null);
     try {
@@ -3581,7 +3632,10 @@ function App() {
                   onMessagesScroll={handleMessagesScroll}
                   onSetUserContextMenu={setUserContextMenu}
                   onSetEditingDraft={setEditingDraft}
-                  onInputTextChange={setInputText}
+                  onInputTextChange={(v) => {
+                    setInputText(v);
+                    if (activeHubId && selectedChannel) saveDraft(`${activeHubId}/${selectedChannel.id}`, v);
+                  }}
                   onKeyDown={handleKeyDown}
                   slashCommands={slashCommands}
                   onOpenImage={openImage}

@@ -1898,6 +1898,15 @@ select,
   color: var(--accent-text);
 }
 
+.channel-draft-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #faa61a;
+  margin-left: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
 .channel-settings-btn {
   background: transparent;
   border: none;
