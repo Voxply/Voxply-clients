@@ -46,6 +46,10 @@ enum WsCommand {
     VoiceSpeaking { channel_id: String, speaking: bool },
     Typing { channel_id: String, typing: bool },
     DmTyping { conversation_id: String, typing: bool },
+    GameSend { session_id: String, payload: serde_json::Value, to: Option<String> },
+    GameSetStatus { session_id: String, status: String },
+    GameSnapshot { session_id: String, blob: String },
+    GameEnd { session_id: String, result: Option<serde_json::Value> },
     Raw(String),
 }
 
@@ -448,6 +452,44 @@ enum WsServerMessage {
     VoiceZoneState {
         channel_id: String,
         zones: Vec<VoiceZoneSnapshotInfo>,
+    },
+    #[serde(rename = "game_session_created")]
+    GameSessionCreated {
+        session_id: String,
+        game_id: String,
+        channel_id: String,
+        host_pubkey: String,
+    },
+    #[serde(rename = "game_player_joined")]
+    GamePlayerJoined {
+        session_id: String,
+        pubkey: String,
+        #[serde(default)]
+        display_name: Option<String>,
+    },
+    #[serde(rename = "game_player_left")]
+    GamePlayerLeft {
+        session_id: String,
+        pubkey: String,
+    },
+    #[serde(rename = "game_host_changed")]
+    GameHostChanged {
+        session_id: String,
+        new_host_pubkey: String,
+    },
+    #[serde(rename = "game_event")]
+    GameEventMsg {
+        session_id: String,
+        from_pubkey: String,
+        payload: serde_json::Value,
+    },
+    #[serde(rename = "game_session_ended")]
+    GameSessionEnded {
+        session_id: String,
+        #[serde(default)]
+        reason: Option<String>,
+        #[serde(default)]
+        result: Option<serde_json::Value>,
     },
     #[serde(other)]
     Other,
@@ -1301,6 +1343,41 @@ async fn spawn_ws_task(
                                             "position": position,
                                         }));
                                     }
+                                    WsServerMessage::GameSessionCreated { session_id, game_id, channel_id, host_pubkey } => {
+                                        let _ = app.emit("game-session-created", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id,
+                                            "game_id": game_id, "channel_id": channel_id, "host_pubkey": host_pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::GamePlayerJoined { session_id, pubkey, display_name } => {
+                                        let _ = app.emit("game-player-joined", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id,
+                                            "pubkey": pubkey, "display_name": display_name,
+                                        }));
+                                    }
+                                    WsServerMessage::GamePlayerLeft { session_id, pubkey } => {
+                                        let _ = app.emit("game-player-left", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id, "pubkey": pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::GameHostChanged { session_id, new_host_pubkey } => {
+                                        let _ = app.emit("game-host-changed", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id,
+                                            "new_host_pubkey": new_host_pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::GameEventMsg { session_id, from_pubkey, payload } => {
+                                        let _ = app.emit("game-event", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id,
+                                            "from_pubkey": from_pubkey, "payload": payload,
+                                        }));
+                                    }
+                                    WsServerMessage::GameSessionEnded { session_id, reason, result } => {
+                                        let _ = app.emit("game-session-ended", serde_json::json!({
+                                            "hub_id": hub_id_for_task, "session_id": session_id,
+                                            "reason": reason, "result": result,
+                                        }));
+                                    }
                                     WsServerMessage::Other => {}
                                 }
                             }
@@ -1347,6 +1424,23 @@ async fn spawn_ws_task(
                                 "conversation_id": conversation_id,
                                 "typing": typing,
                             })
+                        }
+                        WsCommand::GameSend { session_id, payload, to } => {
+                            let mut m = serde_json::json!({ "type": "game_send", "session_id": session_id, "payload": payload });
+                            if let Some(t) = to { m["to"] = serde_json::json!(t); }
+                            if ws_tx.send(WsMessage::Text(m.to_string().into())).await.is_err() {
+                                break;
+                            }
+                            continue;
+                        }
+                        WsCommand::GameSetStatus { session_id, status } => {
+                            serde_json::json!({ "type": "game_set_status", "session_id": session_id, "status": status })
+                        }
+                        WsCommand::GameSnapshot { session_id, blob } => {
+                            serde_json::json!({ "type": "game_snapshot", "session_id": session_id, "blob": blob })
+                        }
+                        WsCommand::GameEnd { session_id, result } => {
+                            serde_json::json!({ "type": "game_end", "session_id": session_id, "result": result })
                         }
                         WsCommand::Raw(raw_json) => {
                             if ws_tx.send(WsMessage::Text(raw_json.into())).await.is_err() {
@@ -5933,6 +6027,209 @@ async fn survey_admin_responses(
     resp.json().await.map_err(|e| format!("Invalid response: {e}"))
 }
 
+// =============================================================================
+// Feature: Tier 2 game session Tauri commands
+// =============================================================================
+
+/// Retrieve the active hub URL + token, identical to `active_session` but
+/// named for clarity at call sites that need both values inline.
+fn active_hub_url_and_token(state: &AppState) -> Result<(String, String), String> {
+    active_session(state)
+}
+
+#[tauri::command]
+async fn game_create_session(
+    game_id: String,
+    channel_id: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .post(format!("{hub_url}/games/{game_id}/sessions"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "channel_id": channel_id }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn game_join_session(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .post(format!("{hub_url}/games/sessions/{session_id}/join"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn game_leave_session(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .post(format!("{hub_url}/games/sessions/{session_id}/leave"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn game_get_session(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .get(format!("{hub_url}/games/sessions/{session_id}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn game_list_sessions(
+    channel_id: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .get(format!("{hub_url}/games/sessions"))
+        .query(&[("channel_id", channel_id.as_str())])
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn game_send_move(
+    session_id: String,
+    payload: serde_json::Value,
+    to: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    tx.send(WsCommand::GameSend { session_id, payload, to })
+        .map_err(|_| "WS closed".to_string())
+}
+
+#[tauri::command]
+fn game_start_session(
+    session_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    tx.send(WsCommand::GameSetStatus { session_id, status: "in_progress".to_string() })
+        .map_err(|_| "WS closed".to_string())
+}
+
+#[tauri::command]
+fn game_snapshot(
+    session_id: String,
+    blob: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    tx.send(WsCommand::GameSnapshot { session_id, blob })
+        .map_err(|_| "WS closed".to_string())
+}
+
+#[tauri::command]
+fn game_end_session(
+    session_id: String,
+    result: Option<serde_json::Value>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    tx.send(WsCommand::GameEnd { session_id, result })
+        .map_err(|_| "WS closed".to_string())
+}
+
+#[tauri::command]
+fn game_set_join_policy(
+    session_id: String,
+    join_during_play: bool,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    let payload = serde_json::json!({
+        "type": "game_set_join_policy",
+        "session_id": session_id,
+        "join_during_play": join_during_play,
+    });
+    tx.send(WsCommand::Raw(payload.to_string()))
+        .map_err(|_| "WS closed".to_string())
+}
+
+#[tauri::command]
+async fn game_shared_kv_get(
+    session_id: String,
+    key: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .get(format!("{hub_url}/games/sessions/{session_id}/shared-kv/{key}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn game_shared_kv_set(
+    session_id: String,
+    key: String,
+    value: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state.http_client
+        .put(format!("{hub_url}/games/sessions/{session_id}/shared-kv/{key}"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "value": value }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    Ok(())
+}
+
 #[tauri::command]
 async fn open_pip_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("screen-share-pip") {
@@ -6258,6 +6555,18 @@ pub fn run() {
             import_identity_backup,
             open_pip_window,
             close_pip_window,
+            game_create_session,
+            game_join_session,
+            game_leave_session,
+            game_get_session,
+            game_list_sessions,
+            game_send_move,
+            game_start_session,
+            game_snapshot,
+            game_end_session,
+            game_set_join_policy,
+            game_shared_kv_get,
+            game_shared_kv_set,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
