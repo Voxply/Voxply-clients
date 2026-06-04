@@ -511,6 +511,42 @@ enum WsServerMessage {
         #[serde(default)]
         result: Option<serde_json::Value>,
     },
+    #[serde(rename = "video_participant_enabled")]
+    VideoParticipantEnabled {
+        channel_id: String,
+        pubkey: String,
+    },
+    #[serde(rename = "video_participant_disabled")]
+    VideoParticipantDisabled {
+        channel_id: String,
+        pubkey: String,
+    },
+    #[serde(rename = "video_participants")]
+    VideoParticipants {
+        channel_id: String,
+        pubkeys: Vec<String>,
+    },
+    #[serde(rename = "video_offer_in")]
+    VideoOfferIn {
+        channel_id: String,
+        from_pubkey: String,
+        to_pubkey: String,
+        sdp: String,
+    },
+    #[serde(rename = "video_answer_in")]
+    VideoAnswerIn {
+        channel_id: String,
+        from_pubkey: String,
+        to_pubkey: String,
+        sdp: String,
+    },
+    #[serde(rename = "video_ice_in")]
+    VideoIceIn {
+        channel_id: String,
+        from_pubkey: String,
+        to_pubkey: String,
+        candidate: String,
+    },
     #[serde(other)]
     Other,
 }
@@ -1396,6 +1432,54 @@ async fn spawn_ws_task(
                                         let _ = app.emit("game-session-ended", serde_json::json!({
                                             "hub_id": hub_id_for_task, "session_id": session_id,
                                             "reason": reason, "result": result,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoParticipantEnabled { channel_id, pubkey } => {
+                                        let _ = app.emit("video-participant-enabled", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "pubkey": pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoParticipantDisabled { channel_id, pubkey } => {
+                                        let _ = app.emit("video-participant-disabled", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "pubkey": pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoParticipants { channel_id, pubkeys } => {
+                                        let _ = app.emit("video-participants", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "pubkeys": pubkeys,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoOfferIn { channel_id, from_pubkey, to_pubkey, sdp } => {
+                                        let _ = app.emit("video-offer-in", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "from_pubkey": from_pubkey,
+                                            "to_pubkey": to_pubkey,
+                                            "sdp": sdp,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoAnswerIn { channel_id, from_pubkey, to_pubkey, sdp } => {
+                                        let _ = app.emit("video-answer-in", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "from_pubkey": from_pubkey,
+                                            "to_pubkey": to_pubkey,
+                                            "sdp": sdp,
+                                        }));
+                                    }
+                                    WsServerMessage::VideoIceIn { channel_id, from_pubkey, to_pubkey, candidate } => {
+                                        let _ = app.emit("video-ice-in", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "from_pubkey": from_pubkey,
+                                            "to_pubkey": to_pubkey,
+                                            "candidate": candidate,
                                         }));
                                     }
                                     WsServerMessage::Other => {}
