@@ -197,9 +197,6 @@ export function ContentArea({
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
-  const [pendingGameForSession, setPendingGameForSession] = useState<InstalledGame | null>(null);
-  const [sessionPickerOpen, setSessionPickerOpen] = useState(false);
-  const [activeSessions, setActiveSessions] = useState<{ id: string; host_pubkey: string; players: string[] }[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [forumSelectedPost, setForumSelectedPost] = useState<PostSummary | null>(null);
   const [forumComposing, setForumComposing] = useState(false);
@@ -1022,59 +1019,14 @@ export function ContentArea({
       {pickerOpen && (
         <GamePicker
           games={installedGames}
-          onSelect={(game) => {
+          channelId={selectedChannel?.id ?? null}
+          onSelect={(game, sessionId) => {
             setPickerOpen(false);
-            const isMultiplayer = (game.permissions ?? []).includes("multiplayer");
-            if (isMultiplayer) {
-              invoke<{ id: string; host_pubkey: string; players: string[] }[]>("list_game_sessions", { gameId: game.id, channelId: selectedChannel?.id }).then((sessions) => {
-                setActiveSessions(sessions);
-                setPendingGameForSession(game);
-                setSessionPickerOpen(true);
-              }).catch(() => {
-                setActiveGame(game);
-                setActiveSessionId(null);
-              });
-            } else {
-              setActiveGame(game);
-              setActiveSessionId(null);
-            }
+            setActiveGame(game);
+            setActiveSessionId(sessionId);
           }}
           onClose={() => setPickerOpen(false)}
         />
-      )}
-
-      {sessionPickerOpen && pendingGameForSession && (
-        <div className="game-modal-overlay" onClick={() => { setSessionPickerOpen(false); setPendingGameForSession(null); }}>
-          <div className="game-session-picker" onClick={(e) => e.stopPropagation()}>
-            <h3>{pendingGameForSession.name} — Session</h3>
-            <button onClick={() => {
-              setSessionPickerOpen(false);
-              setActiveGame(pendingGameForSession);
-              setActiveSessionId(null);
-              setPendingGameForSession(null);
-            }}>
-              Create new session
-            </button>
-            {activeSessions.length > 0 && (
-              <>
-                <p className="muted" style={{ marginTop: 8 }}>Or join an existing session:</p>
-                {activeSessions.map((s) => (
-                  <button key={s.id} className="btn-secondary" onClick={() => {
-                    setSessionPickerOpen(false);
-                    setActiveGame(pendingGameForSession);
-                    setActiveSessionId(s.id);
-                    setPendingGameForSession(null);
-                  }}>
-                    Session by {s.host_pubkey.slice(0, 12)} ({s.players.length} players)
-                  </button>
-                ))}
-              </>
-            )}
-            <button className="btn-secondary" style={{ marginTop: 8 }} onClick={() => { setSessionPickerOpen(false); setPendingGameForSession(null); }}>
-              Cancel
-            </button>
-          </div>
-        </div>
       )}
 
       {activeGame && (

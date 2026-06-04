@@ -742,6 +742,20 @@ export interface GameSession {
   ended_at: number | null;
 }
 
+export interface GameSessionPlayer {
+  pubkey: string;
+  display_name: string | null;
+}
+
+export interface GameSessionDetail {
+  id: string;
+  game_id: string;
+  channel_id: string;
+  host_pubkey: string;
+  status: string;
+  players: GameSessionPlayer[];
+}
+
 // ---- Hub certifications ----
 
 export interface CertPayload {

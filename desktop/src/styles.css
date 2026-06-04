@@ -6394,4 +6394,11 @@ a.embed-title:hover {
 .cosmetics-item-owned { font-size: 12px; color: #3ba55c; font-weight: 600; }
 .cosmetics-item-redeem { padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; background: var(--accent-color, #5865f2); color: #fff; border: none; }
 .cosmetics-item-redeem:disabled { opacity: 0.5; cursor: default; }
+
+.game-live-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: #3ba55c;
+  margin-left: 6px;
+}
 .cosmetics-error { font-size: 12px; color: #ed4245; margin-bottom: 8px; }

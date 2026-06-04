@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import type { InstalledGame } from "../types";
+import type { InstalledGame, GameSessionDetail } from "../types";
 import { FocusTrap } from "./FocusTrap";
 
 interface Props {
@@ -124,48 +124,90 @@ export function GameModal({ game, theme, publicKey, displayName, avatar, channel
           }
           break;
 
-        case "voxply:game:createSession":
+        case "voxply:game:ready":
+          if (!sessionId) {
+            reply({ type: "voxply:game:state", reqId: msg.reqId, error: "no_session" });
+            break;
+          }
           try {
-            const sess = await invoke("game_create_session", { gameId: game.id, channelId });
-            reply({ type: "voxply:game:sessionCreated", data: sess });
+            const session = await invoke<GameSessionDetail>("game_get_session", { sessionId });
+            reply({
+              type: "voxply:game:state",
+              reqId: msg.reqId,
+              data: {
+                session_id: session.id,
+                status: session.status,
+                is_host: session.host_pubkey === publicKey,
+                roster: session.players ?? [],
+              },
+            });
           } catch (err) {
-            reply({ type: "voxply:game:error", action: "createSession", error: String(err) });
+            reply({ type: "voxply:game:state", reqId: msg.reqId, error: String(err) });
           }
           break;
 
-        case "voxply:game:joinSession":
+        case "voxply:game:start":
+          if (!sessionId) break;
           try {
-            await invoke("game_join_session", { sessionId: msg.body?.session_id });
-            reply({ type: "voxply:game:sessionJoined", session_id: msg.body?.session_id });
+            await invoke("game_start_session", { sessionId });
           } catch (err) {
-            reply({ type: "voxply:game:error", action: "joinSession", error: String(err) });
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "start", error: String(err) });
           }
           break;
 
-        case "voxply:game:broadcastMove":
+        case "voxply:game:send":
+          if (!sessionId) break;
           try {
-            await invoke("game_broadcast_move", { sessionId: msg.body?.session_id, state: msg.body?.state });
-            reply({ type: "voxply:game:moveSent" });
+            await invoke("game_send_move", { sessionId, payload: msg.payload, to: msg.to ?? null });
           } catch (err) {
-            reply({ type: "voxply:game:error", action: "broadcastMove", error: String(err) });
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "send", error: String(err) });
           }
           break;
 
-        case "voxply:game:getState":
+        case "voxply:game:snapshot":
+          if (!sessionId) break;
           try {
-            const state = await invoke("game_get_state", { sessionId: msg.body?.session_id });
-            reply({ type: "voxply:game:stateResult", data: state });
+            await invoke("game_snapshot", { sessionId, blob: msg.blob });
           } catch (err) {
-            reply({ type: "voxply:game:error", action: "getState", error: String(err) });
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "snapshot", error: String(err) });
           }
           break;
 
-        case "voxply:game:endSession":
+        case "voxply:game:sharedKvGet":
+          if (!sessionId) break;
           try {
-            await invoke("game_end_session", { sessionId: msg.body?.session_id });
-            reply({ type: "voxply:game:sessionEnded" });
+            const value = await invoke<string | null>("game_shared_kv_get", { sessionId, key: msg.key });
+            reply({ type: "voxply:game:kvValue", reqId: msg.reqId, key: msg.key, value });
           } catch (err) {
-            reply({ type: "voxply:game:error", action: "endSession", error: String(err) });
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "sharedKvGet", error: String(err) });
+          }
+          break;
+
+        case "voxply:game:sharedKvSet":
+          if (!sessionId) break;
+          try {
+            await invoke("game_shared_kv_set", { sessionId, key: msg.key, value: msg.value });
+            reply({ type: "voxply:game:kvOk", reqId: msg.reqId, key: msg.key });
+          } catch (err) {
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "sharedKvSet", error: String(err) });
+          }
+          break;
+
+        case "voxply:game:end":
+          if (!sessionId) break;
+          try {
+            await invoke("game_end_session", { sessionId, result: msg.result ?? null });
+          } catch (err) {
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "end", error: String(err) });
+          }
+          break;
+
+        case "voxply:game:setJoinPolicy":
+          if (!sessionId) break;
+          try {
+            await invoke("game_set_join_policy", { sessionId, joinDuringPlay: msg.join_during_play ?? false });
+          } catch (err) {
+            reply({ type: "voxply:game:error", reqId: msg.reqId, action: "setJoinPolicy", error: String(err) });
           }
           break;
 
@@ -248,6 +290,62 @@ export function GameModal({ game, theme, publicKey, displayName, avatar, channel
     }).then((u) => { unlisten = u; });
     return () => { unlisten?.(); };
   }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+
+    const unlistens: (() => void)[] = [];
+
+    listen<{ session_id: string; pubkey: string; display_name: string }>("game-player-joined", (event) => {
+      if (event.payload.session_id !== sessionId) return;
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "voxply:game:playerJoined",
+        data: { pubkey: event.payload.pubkey, display_name: event.payload.display_name },
+      }, "*");
+    }).then((u) => unlistens.push(u));
+
+    listen<{ session_id: string; pubkey: string }>("game-player-left", (event) => {
+      if (event.payload.session_id !== sessionId) return;
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "voxply:game:playerLeft",
+        data: { pubkey: event.payload.pubkey },
+      }, "*");
+    }).then((u) => unlistens.push(u));
+
+    listen<{ session_id: string; new_host_pubkey: string }>("game-host-changed", (event) => {
+      if (event.payload.session_id !== sessionId) return;
+      if (event.payload.new_host_pubkey !== publicKey) return;
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({ type: "voxply:game:youAreHost" }, "*");
+    }).then((u) => unlistens.push(u));
+
+    listen<{ session_id: string; from_pubkey: string; payload: unknown }>("game-event", (event) => {
+      if (event.payload.session_id !== sessionId) return;
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "voxply:game:event",
+        data: { from: event.payload.from_pubkey, payload: event.payload.payload },
+      }, "*");
+    }).then((u) => unlistens.push(u));
+
+    listen<{ session_id: string; reason: string }>("game-session-ended", (event) => {
+      if (event.payload.session_id !== sessionId) return;
+      const frame = iframeRef.current;
+      if (!frame?.contentWindow) return;
+      frame.contentWindow.postMessage({
+        type: "voxply:game:ended",
+        data: { reason: event.payload.reason },
+      }, "*");
+    }).then((u) => unlistens.push(u));
+
+    return () => { unlistens.forEach((u) => u()); };
+  }, [sessionId, publicKey]);
 
   const disclosure = disclosureText(game);
 
