@@ -6452,3 +6452,24 @@ a.embed-title:hover {
   text-align: right;
 }
 .cosmetics-error { font-size: 12px; color: #ed4245; margin-bottom: 8px; }
+
+/* ============================================================
+   VIDEO GRID
+   ============================================================ */
+.video-grid { display: grid; gap: 4px; padding: 4px; background: var(--bg-primary, #1e1f22); }
+.video-grid-1 { grid-template-columns: 1fr; }
+.video-grid-4 { grid-template-columns: repeat(2, 1fr); }
+.video-grid-speaker { display: flex; flex-direction: column; }
+.video-grid-main { flex: 1; }
+.video-grid-thumbnails { display: flex; gap: 4px; overflow-x: auto; height: 100px; }
+.video-grid-thumbnails .video-tile { width: 140px; flex-shrink: 0; }
+.video-tile { position: relative; background: #000; border-radius: 6px; overflow: hidden; border: 2px solid transparent; aspect-ratio: 4/3; }
+.video-tile.speaking { border-color: var(--accent-color, #5865f2); }
+.video-tile.pinned { border-color: #faa61a; }
+.video-tile-video { width: 100%; height: 100%; object-fit: cover; }
+.video-tile-name { position: absolute; bottom: 4px; left: 6px; font-size: 11px; color: #fff; background: rgba(0,0,0,0.6); border-radius: 3px; padding: 1px 4px; }
+.video-tile-pin { position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.5); border: none; border-radius: 3px; cursor: pointer; font-size: 12px; opacity: 0; transition: opacity 0.15s; padding: 2px 4px; }
+.video-tile:hover .video-tile-pin { opacity: 1; }
+.video-self-view { position: absolute; bottom: 80px; right: 12px; width: 120px; border-radius: 6px; overflow: hidden; border: 2px solid var(--border-color, #3a3d44); }
+.video-self-view .video-tile-video { width: 100%; aspect-ratio: 4/3; object-fit: cover; transform: scaleX(-1); }
+.video-self-view .video-tile-name { font-size: 10px; }
