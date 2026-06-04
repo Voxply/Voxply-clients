@@ -553,6 +553,10 @@ enum WsServerMessage {
         poll_id: String,
         totals: std::collections::HashMap<String, serde_json::Value>,
     },
+    #[serde(rename = "voice_whisper_started")]
+    VoiceWhisperStarted { sender_pubkey: String },
+    #[serde(rename = "voice_whisper_stopped")]
+    VoiceWhisperStopped { sender_pubkey: String },
     #[serde(other)]
     Other,
 }
@@ -1494,6 +1498,18 @@ async fn spawn_ws_task(
                                             "channel_id": channel_id,
                                             "poll_id": poll_id,
                                             "totals": totals,
+                                        }));
+                                    }
+                                    WsServerMessage::VoiceWhisperStarted { sender_pubkey } => {
+                                        let _ = app.emit("voice-whisper-started", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "sender_pubkey": sender_pubkey,
+                                        }));
+                                    }
+                                    WsServerMessage::VoiceWhisperStopped { sender_pubkey } => {
+                                        let _ = app.emit("voice-whisper-stopped", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "sender_pubkey": sender_pubkey,
                                         }));
                                     }
                                     WsServerMessage::Other => {}
@@ -2451,9 +2467,30 @@ async fn voice_join(
                 }
             });
 
+            // Forward whisper-state transitions from the receive task.
+            let whisper_rx = pipeline.whisper_rx.take();
+            let whisper_app = app.clone();
+            let whisper_roster = pipeline.roster_map.clone();
+            let whisper_task = tokio::spawn(async move {
+                let Some(mut rx) = whisper_rx else { return };
+                while let Some((sender_id, is_whisper)) = rx.recv().await {
+                    let pubkey = {
+                        let rm = whisper_roster.read().await;
+                        rm.get(&sender_id).cloned().unwrap_or_default()
+                    };
+                    if !pubkey.is_empty() {
+                        let _ = whisper_app.emit("voice-whisper-receiving", serde_json::json!({
+                            "sender_pubkey": pubkey,
+                            "is_whisper": is_whisper,
+                        }));
+                    }
+                }
+            });
+
             let _ = tokio::task::spawn_blocking(move || stop_rx.recv()).await;
             speaking_task.abort();
             level_task.abort();
+            whisper_task.abort();
             pipeline.stop().await;
         });
     });
@@ -6550,6 +6587,63 @@ async fn close_pip_window(app: tauri::AppHandle) -> Result<(), String> {
     Ok(())
 }
 
+// --- Whisper control ---
+
+#[derive(serde::Deserialize)]
+struct WhisperTargetParam {
+    #[serde(rename = "type")]
+    target_type: String,
+    id: String,
+}
+
+#[tauri::command]
+fn start_whisper(
+    targets: Vec<WhisperTargetParam>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let payload = serde_json::json!({
+        "type": "voice_whisper_start",
+        "targets": targets.iter().map(|t| serde_json::json!({ "type": t.target_type, "id": t.id })).collect::<Vec<_>>(),
+    });
+    let tx = active_ws_tx(&state)?;
+    let _ = tx.send(WsCommand::Raw(serde_json::to_string(&payload).unwrap()));
+    Ok(())
+}
+
+#[tauri::command]
+fn stop_whisper(state: State<'_, AppState>) -> Result<(), String> {
+    let tx = active_ws_tx(&state)?;
+    let _ = tx.send(WsCommand::Raw(r#"{"type":"voice_whisper_stop"}"#.to_string()));
+    Ok(())
+}
+
+// --- Whisper list persistence ---
+
+fn whisper_lists_path(hub_id: &str) -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("No home directory")?;
+    Ok(home.join(".voxply").join(format!("whisper_lists_{hub_id}.json")))
+}
+
+#[tauri::command]
+fn load_whisper_lists(hub_id: String) -> Result<serde_json::Value, String> {
+    let path = whisper_lists_path(&hub_id)?;
+    if !path.exists() {
+        return Ok(serde_json::json!([]));
+    }
+    let text = std::fs::read_to_string(&path).map_err(|e| e.to_string())?;
+    serde_json::from_str(&text).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn save_whisper_lists(hub_id: String, lists: serde_json::Value) -> Result<(), String> {
+    let path = whisper_lists_path(&hub_id)?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
+    let text = serde_json::to_string(&lists).map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| e.to_string())
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     use tauri::menu::{Menu, MenuItem};
@@ -6863,6 +6957,10 @@ pub fn run() {
             rsvp_event,
             create_event,
             vote_poll,
+            start_whisper,
+            stop_whisper,
+            load_whisper_lists,
+            save_whisper_lists,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
