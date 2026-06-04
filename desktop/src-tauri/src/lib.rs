@@ -547,6 +547,12 @@ enum WsServerMessage {
         to_pubkey: String,
         candidate: String,
     },
+    #[serde(rename = "poll_vote_updated")]
+    PollVoteUpdated {
+        channel_id: String,
+        poll_id: String,
+        totals: std::collections::HashMap<String, serde_json::Value>,
+    },
     #[serde(other)]
     Other,
 }
@@ -1482,6 +1488,14 @@ async fn spawn_ws_task(
                                             "candidate": candidate,
                                         }));
                                     }
+                                    WsServerMessage::PollVoteUpdated { channel_id, poll_id, totals } => {
+                                        let _ = app.emit("poll-vote-updated", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "poll_id": poll_id,
+                                            "totals": totals,
+                                        }));
+                                    }
                                     WsServerMessage::Other => {}
                                 }
                             }
@@ -1608,6 +1622,21 @@ async fn list_games(state: State<'_, AppState>) -> Result<Vec<InstalledGame>, St
         .json()
         .await
         .map_err(|e| format!("Invalid: {e}"))
+}
+
+#[tauri::command]
+async fn list_hub_emojis(state: State<'_, AppState>) -> Result<Vec<serde_json::Value>, String> {
+    let (hub_url, token) = active_session(&state)?;
+    state
+        .http_client
+        .get(format!("{hub_url}/emojis"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -1892,6 +1921,27 @@ async fn get_messages(
     Ok(messages)
 }
 
+/// Fetch flat thread replies: GET /channels/:id/messages?thread_root=:msg_id
+#[tauri::command]
+async fn get_thread_replies(
+    channel_id: String,
+    thread_root: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let (hub_url, token) = active_session(&state)?;
+    state
+        .http_client
+        .get(format!("{hub_url}/channels/{channel_id}/messages"))
+        .query(&[("thread_root", &thread_root), ("limit", &"100".to_string())])
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?
+        .json()
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn add_reaction(
     channel_id: String,
@@ -2038,6 +2088,29 @@ async fn search_messages(
         .await
         .map_err(|e| format!("Invalid: {e}"))?;
     Ok(messages)
+}
+
+/// Global cross-channel FTS search — hits GET /search on the active hub.
+#[tauri::command]
+async fn search_messages_global(
+    q: String,
+    state: State<'_, AppState>,
+) -> Result<Vec<serde_json::Value>, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let encoded_q = urlencoding_emoji(&q);
+    let res = state
+        .http_client
+        .get(format!("{hub_url}/search?q={encoded_q}&limit=20"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<Vec<serde_json::Value>>()
+        .await
+        .map_err(|e| e.to_string())
 }
 
 #[tauri::command]
@@ -6360,6 +6433,92 @@ async fn game_shared_kv_set(
     Ok(())
 }
 
+// =============================================================================
+// Feature: Events / calendar (Task #30) and Polls (Task #31) Tauri commands
+// =============================================================================
+
+#[tauri::command]
+async fn list_events(
+    upcoming: bool,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let url = if upcoming {
+        format!("{hub_url}/events?upcoming=true&limit=20")
+    } else {
+        format!("{hub_url}/events?limit=20")
+    };
+    let res = state
+        .http_client
+        .get(url)
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    res.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn rsvp_event(
+    event_id: String,
+    status: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    state
+        .http_client
+        .post(format!("{hub_url}/events/{event_id}/rsvp"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "status": status }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+#[tauri::command]
+async fn create_event(
+    channel_id: String,
+    title: String,
+    description: String,
+    starts_at: i64,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    let res = state
+        .http_client
+        .post(format!("{hub_url}/events"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "channel_id": channel_id,
+            "title": title,
+            "description": description,
+            "starts_at": starts_at,
+        }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    res.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn vote_poll(
+    poll_id: String,
+    option_ids: Vec<String>,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_hub_url_and_token(&state)?;
+    state
+        .http_client
+        .post(format!("{hub_url}/polls/{poll_id}/vote"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "option_ids": option_ids }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 #[tauri::command]
 async fn open_pip_window(app: tauri::AppHandle) -> Result<(), String> {
     if let Some(w) = app.get_webview_window("screen-share-pip") {
@@ -6493,6 +6652,7 @@ pub fn run() {
             auto_connect_saved,
             list_channels,
             list_games,
+            list_hub_emojis,
             create_channel,
             update_channel_description,
             rename_channel,
@@ -6502,7 +6662,9 @@ pub fn run() {
             reorder_channels,
             list_users,
             get_messages,
+            get_thread_replies,
             search_messages,
+            search_messages_global,
             voice_populations,
             voice_active_users,
             voice_channel_participants,
@@ -6697,6 +6859,10 @@ pub fn run() {
             game_set_join_policy,
             game_shared_kv_get,
             game_shared_kv_set,
+            list_events,
+            rsvp_event,
+            create_event,
+            vote_poll,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

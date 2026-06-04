@@ -3539,6 +3539,10 @@ function App() {
                   showBgPicker={showBgPicker}
                   onShowBgPickerChange={setShowBgPicker}
                   onChangeBackground={video.changeBackground}
+                  onGlobalSearchNavigate={(channelId, _messageId) => {
+                    const ch = channels.find((c) => c.id === channelId);
+                    if (ch) selectChannel(ch);
+                  }}
                 />
                 {(video.videoEnabled || video.remoteStreams.size > 0) && (
                   <VideoGrid

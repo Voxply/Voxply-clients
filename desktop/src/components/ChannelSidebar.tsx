@@ -1,4 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { SearchBar } from "./SearchBar";
 
 type UserStatus = "online" | "away" | "dnd" | "offline";
 import {
@@ -102,6 +103,7 @@ interface Props {
   showBgPicker: boolean;
   onShowBgPickerChange: (v: boolean) => void;
   onChangeBackground: (mode: "none" | "blur") => void;
+  onGlobalSearchNavigate: (channelId: string, messageId: string) => void;
 }
 
 export function ChannelSidebar({
@@ -123,6 +125,7 @@ export function ChannelSidebar({
   userStatus, onStatusChange,
   voiceGains, onSetVoiceGain,
   videoEnabled, onVideoToggle, backgroundMode, showBgPicker, onShowBgPickerChange, onChangeBackground,
+  onGlobalSearchNavigate,
 }: Props) {
   const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -305,6 +308,10 @@ export function ChannelSidebar({
             </div>
           )}
         </div>
+      )}
+
+      {view === "channels" && (
+        <SearchBar onNavigate={onGlobalSearchNavigate} />
       )}
 
       <div

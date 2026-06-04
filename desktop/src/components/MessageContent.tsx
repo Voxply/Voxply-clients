@@ -40,17 +40,42 @@ function splitOnPattern(
   return out;
 }
 
+interface HubEmojiEntry { id: string; name: string; url: string; }
+
 export function MessageContent({
   content,
   knownNames,
   myName,
+  hubEmojiMap,
+  hubBaseUrl,
 }: {
   content: string;
   knownNames: Set<string>;
   myName: string | null;
+  hubEmojiMap?: Map<string, HubEmojiEntry>;
+  hubBaseUrl?: string;
 }) {
   const myLower = myName?.toLowerCase() ?? null;
   let parts: Part[] = [content];
+
+  // Hub custom emojis — replace :name: tokens before any other pass so that
+  // markdown rules don't accidentally consume the colons.
+  if (hubEmojiMap && hubEmojiMap.size > 0) {
+    parts = splitOnPattern(parts, /:([\w-]+):/, (m, key) => {
+      const entry = hubEmojiMap.get(m[1]);
+      if (!entry) return m[0]; // unknown — render as-is
+      const src = hubBaseUrl ? `${hubBaseUrl}${entry.url}` : entry.url;
+      return (
+        <img
+          key={key}
+          src={src}
+          alt={`:${entry.name}:`}
+          title={`:${entry.name}:`}
+          className="inline-emoji"
+        />
+      );
+    });
+  }
 
   // Fenced code blocks. Optionally accept a language hint on the same line
   // as the opening fence: ```rust\n...\n```. The hint becomes a small label

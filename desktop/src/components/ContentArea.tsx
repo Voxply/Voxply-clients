@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type {
@@ -44,6 +44,7 @@ import { PendingAttachments, MessageAttachments } from "./Attachments";
 import { MessageContent } from "./MessageContent";
 import { UserListGrouped } from "./UserListGrouped";
 import { BotCard } from "./BotCard";
+import { EmojiPicker } from "./EmojiPicker";
 
 interface SelectedAllianceChannel {
   alliance_id: string;
@@ -215,6 +216,72 @@ export function ContentArea({
   const announceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingAnnouncementsRef = useRef<string[]>([]);
 
+  // ---- Hub custom emojis (Task #29) ----
+  interface HubEmojiEntry { id: string; name: string; url: string; }
+  const [hubEmojis, setHubEmojis] = useState<HubEmojiEntry[]>([]);
+  useEffect(() => {
+    if (!activeHubId) return;
+    invoke<HubEmojiEntry[]>("list_hub_emojis")
+      .then(setHubEmojis)
+      .catch(() => setHubEmojis([]));
+  }, [activeHubId]);
+
+  // Build a name→emoji lookup for inline rendering.
+  const hubEmojiMap = useMemo(() => {
+    const map = new Map<string, HubEmojiEntry>();
+    for (const e of hubEmojis) map.set(e.name, e);
+    return map;
+  }, [hubEmojis]);
+
+  // ---- Thread state (Task #32) ----
+  // Persist expanded thread IDs per channel in localStorage.
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(() => {
+    if (!selectedChannel) return new Set();
+    try {
+      const raw = localStorage.getItem(`voxply.threads.${selectedChannel.id}`);
+      return new Set(raw ? JSON.parse(raw) : []);
+    } catch { return new Set(); }
+  });
+  const [threadReplies, setThreadReplies] = useState<Record<string, Message[]>>({});
+
+  // Reset expanded threads when channel changes.
+  useEffect(() => {
+    if (!selectedChannel) { setExpandedThreads(new Set()); return; }
+    try {
+      const raw = localStorage.getItem(`voxply.threads.${selectedChannel.id}`);
+      setExpandedThreads(new Set(raw ? JSON.parse(raw) : []));
+    } catch { setExpandedThreads(new Set()); }
+    setThreadReplies({});
+  }, [selectedChannel?.id]);
+
+  function persistExpandedThreads(next: Set<string>) {
+    if (!selectedChannel) return;
+    localStorage.setItem(`voxply.threads.${selectedChannel.id}`, JSON.stringify([...next]));
+  }
+
+  async function toggleThread(messageId: string) {
+    if (expandedThreads.has(messageId)) {
+      const next = new Set(expandedThreads);
+      next.delete(messageId);
+      setExpandedThreads(next);
+      persistExpandedThreads(next);
+      return;
+    }
+    // Fetch replies.
+    if (!selectedChannel) return;
+    try {
+      const replies = await invoke<Message[]>("get_thread_replies", {
+        channelId: selectedChannel.id,
+        threadRoot: messageId,
+      });
+      setThreadReplies((prev) => ({ ...prev, [messageId]: replies }));
+      const next = new Set(expandedThreads);
+      next.add(messageId);
+      setExpandedThreads(next);
+      persistExpandedThreads(next);
+    } catch { /* silently fail */ }
+  }
+
   useEffect(() => {
     if (document.hidden) return;
     const latestMsg = messages[messages.length - 1];
@@ -239,6 +306,30 @@ export function ContentArea({
   }, []);
 
   const activeHub = hubs.find((h) => h.hub_id === activeHubId);
+
+  /** Render a message content string with `:name:` hub emoji tokens replaced
+   *  by inline <img> elements.  Falls back to showing the raw `:name:` text
+   *  for unknown shortcodes — graceful degradation. */
+  function renderWithHubEmojis(content: string): React.ReactNode {
+    if (hubEmojiMap.size === 0) return content;
+    const parts = content.split(/(:[\w-]+:)/g);
+    if (parts.length === 1) return content;
+    return (
+      <>
+        {parts.map((part, i) => {
+          const m = part.match(/^:([\w-]+):$/);
+          if (m) {
+            const entry = hubEmojiMap.get(m[1]);
+            if (entry) {
+              const src = activeHub ? `${activeHub.hub_url}${entry.url}` : entry.url;
+              return <img key={i} src={src} alt={`:${entry.name}:`} title={`:${entry.name}:`} className="inline-emoji" />;
+            }
+          }
+          return <React.Fragment key={i}>{part}</React.Fragment>;
+        })}
+      </>
+    );
+  }
 
   function handleComponentInteract(messageId: string, customId: string, values: string[]) {
     if (onComponentInteract) {
@@ -691,7 +782,7 @@ export function ContentArea({
                             {senderLabel}
                           </span>
                           <span className="action-text">
-                            <MessageContent content={actionText} knownNames={knownDisplayNames} myName={myDisplayName} />
+                            <MessageContent content={actionText} knownNames={knownDisplayNames} myName={myDisplayName} hubEmojiMap={hubEmojiMap} hubBaseUrl={activeHub?.hub_url} />
                           </span>
                           {isEphemeral && (
                             <div className="message-ephemeral-label">{t("message.ephemeral")}</div>
@@ -768,7 +859,7 @@ export function ContentArea({
                               {formatRelative(m.created_at)}
                             </span>
                             <span className="message-content">
-                              <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} />
+                              <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} hubEmojiMap={hubEmojiMap} hubBaseUrl={activeHub?.hub_url} />
                             </span>
                             {m.attachments && m.attachments.length > 0 && (
                               <MessageAttachments items={m.attachments} onImageClick={onOpenImage} />
@@ -840,6 +931,38 @@ export function ContentArea({
                             {isEphemeral && (
                               <div className="message-ephemeral-label">{t("message.ephemeral")}</div>
                             )}
+                            {(m.reply_count ?? 0) > 0 && (
+                              <div>
+                                <button
+                                  className="thread-chip"
+                                  onClick={() => toggleThread(m.id)}
+                                  aria-expanded={expandedThreads.has(m.id)}
+                                >
+                                  {expandedThreads.has(m.id) ? "▾" : "▸"} {m.reply_count} {m.reply_count === 1 ? "reply" : "replies"}
+                                </button>
+                              </div>
+                            )}
+                            {expandedThreads.has(m.id) && (
+                              <div className="thread-replies">
+                                {(threadReplies[m.id] ?? []).map((reply) => {
+                                  const rSenderUser = users.find((u) => u.public_key === reply.sender);
+                                  const rLabel = rSenderUser?.display_name || reply.sender_name || formatPubkey(reply.sender);
+                                  return (
+                                    <div key={reply.id} className="message" style={{ paddingTop: 2, paddingBottom: 2 }}>
+                                      <span className="message-sender" style={{ color: colorForKey(reply.sender) }}>
+                                        {rLabel}
+                                      </span>
+                                      <span className="message-time" title={formatFullTimestamp(reply.created_at)}>
+                                        {formatRelative(reply.created_at)}
+                                      </span>
+                                      <span className="message-content">
+                                        {renderWithHubEmojis(reply.content)}
+                                      </span>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
                           </>
                         )}
                       </li>
@@ -902,6 +1025,13 @@ export function ContentArea({
                   onChange={(e) => { onAttachFiles(e.target.files); (e.target as HTMLInputElement).value = ""; }}
                 />
               </label>
+              <EmojiPicker
+                hubUrl={activeHub?.hub_url}
+                onPick={(emoji) => {
+                  onInputTextChange(inputText + emoji);
+                  messageInputRef.current?.focus();
+                }}
+              />
               <div style={{ position: "relative", flex: 1 }}>
                 {slashSuggestions.length > 0 && (
                   <div className="slash-command-popup">
