@@ -62,6 +62,10 @@ struct VoiceSession {
     /// through a control channel.
     muted: std::sync::Arc<std::sync::atomic::AtomicBool>,
     deafened: std::sync::Arc<std::sync::atomic::AtomicBool>,
+    /// Shared with the audio pipeline's receive task.
+    gain_map: std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, f32>>>,
+    /// sender_id → pubkey, updated on voice_roster_update WS messages.
+    roster_map: std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, String>>>,
 }
 
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
@@ -377,6 +381,11 @@ enum WsServerMessage {
         sender_name: Option<String>,
         typing: bool,
     },
+    #[serde(rename = "voice_roster_update")]
+    VoiceRosterUpdate {
+        channel_id: String,
+        participants: Vec<VoiceRosterEntryInfo>,
+    },
     #[serde(other)]
     Other,
 }
@@ -384,6 +393,14 @@ enum WsServerMessage {
 #[derive(Serialize, Deserialize, Clone)]
 struct VoiceParticipantInfo {
     public_key: String,
+    display_name: Option<String>,
+}
+
+#[derive(Serialize, Deserialize, Clone)]
+struct VoiceRosterEntryInfo {
+    sender_id: u16,
+    public_key: String,
+    #[serde(default)]
     display_name: Option<String>,
 }
 
@@ -402,6 +419,30 @@ fn active_hub_path() -> Result<std::path::PathBuf, String> {
 fn voice_settings_path() -> Result<std::path::PathBuf, String> {
     let home = dirs::home_dir().ok_or("No home directory")?;
     Ok(home.join(".voxply").join("voice.json"))
+}
+
+fn voice_gains_path() -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("No home directory")?;
+    Ok(home.join(".voxply").join("voice_gains.json"))
+}
+
+fn load_voice_gains() -> std::collections::HashMap<String, f32> {
+    voice_gains_path()
+        .ok()
+        .and_then(|p| std::fs::read_to_string(&p).ok())
+        .and_then(|s| serde_json::from_str(&s).ok())
+        .unwrap_or_default()
+}
+
+fn save_voice_gains_to_disk(gains: &std::collections::HashMap<String, f32>) {
+    if let Ok(path) = voice_gains_path() {
+        if let Some(parent) = path.parent() {
+            let _ = std::fs::create_dir_all(parent);
+        }
+        if let Ok(text) = serde_json::to_string(gains) {
+            let _ = std::fs::write(&path, text);
+        }
+    }
 }
 
 fn unread_state_path() -> Result<std::path::PathBuf, String> {
@@ -1072,6 +1113,42 @@ async fn spawn_ws_task(
                                             "sender": sender,
                                             "sender_name": sender_name,
                                             "typing": typing,
+                                        }));
+                                    }
+                                    WsServerMessage::VoiceRosterUpdate { channel_id, participants } => {
+                                        // Update the roster map in the active voice session
+                                        let maps: Option<(
+                                            std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, f32>>>,
+                                            std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, String>>>,
+                                        )> = {
+                                            let app_state = app.state::<AppState>();
+                                            let lock = app_state.voice.lock().unwrap();
+                                            lock.as_ref()
+                                                .filter(|s| s.channel_id == channel_id)
+                                                .map(|s| (s.gain_map.clone(), s.roster_map.clone()))
+                                        };
+                                        if let Some((gain_map, roster_map)) = maps {
+                                            let stored_gains = load_voice_gains();
+                                            let participants_clone = participants.clone();
+                                            tokio::spawn(async move {
+                                                let mut rm = roster_map.write().await;
+                                                let mut gm = gain_map.write().await;
+                                                rm.clear();
+                                                for p in &participants_clone {
+                                                    rm.insert(p.sender_id, p.public_key.clone());
+                                                    let gain = stored_gains
+                                                        .get(&p.public_key)
+                                                        .copied()
+                                                        .unwrap_or(1.0);
+                                                    gm.entry(p.sender_id).or_insert(gain);
+                                                }
+                                            });
+                                        }
+                                        // Emit to React UI
+                                        let _ = app.emit("voice-roster-update", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "channel_id": channel_id,
+                                            "participants": participants,
                                         }));
                                     }
                                     WsServerMessage::Other => {}
@@ -1862,6 +1939,8 @@ async fn voice_join(
             u16,
             std::sync::Arc<std::sync::atomic::AtomicBool>,
             std::sync::Arc<std::sync::atomic::AtomicBool>,
+            std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, f32>>>,
+            std::sync::Arc<tokio::sync::RwLock<std::collections::HashMap<u16, String>>>,
         ),
         String,
     >;
@@ -1903,7 +1982,9 @@ async fn voice_join(
             let local_port = pipeline.local_udp_port;
             let muted_arc = pipeline.muted.clone();
             let deafened_arc = pipeline.deafened.clone();
-            let _ = ready_tx.send(Ok((local_port, muted_arc, deafened_arc)));
+            let gain_map = pipeline.gain_map.clone();
+            let roster_map = pipeline.roster_map.clone();
+            let _ = ready_tx.send(Ok((local_port, muted_arc, deafened_arc, gain_map, roster_map)));
 
             // Forward speaking state from the VAD to the hub WS and emit a
             // local Tauri event so the current user's own chip can pulse too.
@@ -1939,7 +2020,7 @@ async fn voice_join(
         });
     });
 
-    let (local_port, muted, deafened) = ready_rx
+    let (local_port, muted, deafened, gain_map, roster_map) = ready_rx
         .recv()
         .map_err(|_| "Voice thread died".to_string())??;
 
@@ -1956,6 +2037,8 @@ async fn voice_join(
         stop_tx,
         muted,
         deafened,
+        gain_map,
+        roster_map,
     });
 
     Ok(())
@@ -2019,6 +2102,39 @@ fn save_voice_settings(settings: StoredVoiceSettings) -> Result<(), String> {
 }
 
 #[tauri::command]
+fn set_voice_gain(public_key: String, gain: f32, state: State<'_, AppState>) -> Result<(), String> {
+    let gain = gain.clamp(0.0, 2.0);
+    // Persist to disk
+    let mut stored = load_voice_gains();
+    if (gain - 1.0f32).abs() < 0.001 {
+        stored.remove(&public_key);
+    } else {
+        stored.insert(public_key.clone(), gain);
+    }
+    save_voice_gains_to_disk(&stored);
+
+    // Update the live gain map if in a voice session
+    let session_data = {
+        let lock = state.voice.lock().unwrap();
+        lock.as_ref().map(|s| (s.roster_map.clone(), s.gain_map.clone()))
+    };
+    if let Some((roster_map, gain_map)) = session_data {
+        let pk = public_key.clone();
+        tokio::spawn(async move {
+            let rm = roster_map.read().await;
+            for (&sid, pubkey) in rm.iter() {
+                if pubkey == &pk {
+                    let mut gm = gain_map.write().await;
+                    gm.insert(sid, gain);
+                    break;
+                }
+            }
+        });
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn mic_test_start(state: State<'_, AppState>, app: AppHandle) -> Result<(), String> {
     // Reuse the voice session slot so we don't collide with an in-progress call.
     if state.voice.lock().unwrap().is_some() {
@@ -2079,6 +2195,8 @@ fn mic_test_start(state: State<'_, AppState>, app: AppHandle) -> Result<(), Stri
         stop_tx,
         muted: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
         deafened: std::sync::Arc::new(std::sync::atomic::AtomicBool::new(false)),
+        gain_map: std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
+        roster_map: std::sync::Arc::new(tokio::sync::RwLock::new(std::collections::HashMap::new())),
     });
 
     Ok(())
@@ -5713,6 +5831,7 @@ pub fn run() {
             list_audio_devices,
             get_voice_settings,
             save_voice_settings,
+            set_voice_gain,
             mic_test_start,
             mic_test_stop,
             update_display_name,

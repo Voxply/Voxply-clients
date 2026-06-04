@@ -3,7 +3,7 @@ use std::net::SocketAddr;
 use anyhow::{Context, Result};
 use tokio::net::UdpSocket;
 
-use crate::protocol::VoicePacket;
+use crate::protocol::{ReceivedVoicePacket, VoicePacket};
 
 pub struct VoiceSocket {
     socket: UdpSocket,
@@ -54,6 +54,17 @@ impl VoiceSocket {
             .await
             .context("UDP recv failed")?;
         let packet = VoicePacket::deserialize(&buf[..len])?;
+        Ok((packet, from))
+    }
+
+    pub async fn recv_from_hub(&self) -> Result<(ReceivedVoicePacket, SocketAddr)> {
+        let mut buf = [0u8; 2048];
+        let (len, from) = self
+            .socket
+            .recv_from(&mut buf)
+            .await
+            .context("UDP recv failed")?;
+        let packet = ReceivedVoicePacket::deserialize(&buf[..len])?;
         Ok((packet, from))
     }
 }

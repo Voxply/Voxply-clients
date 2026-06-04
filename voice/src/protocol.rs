@@ -42,3 +42,27 @@ impl VoicePacket {
         })
     }
 }
+
+/// Wire format for packets received FROM the hub (with sender_id prepended):
+/// [sender_id: u16][sequence: u16][timestamp: u32][opus_data: variable]
+/// Header: 8 bytes.
+pub struct ReceivedVoicePacket {
+    pub sender_id: u16,
+    pub sequence: u16,
+    pub timestamp: u32,
+    pub opus_data: Vec<u8>,
+}
+
+impl ReceivedVoicePacket {
+    pub fn deserialize(data: &[u8]) -> Result<Self> {
+        if data.len() < 8 {
+            anyhow::bail!("Received packet too short: {} bytes (need >= 8)", data.len());
+        }
+        let mut cursor = Cursor::new(data);
+        let sender_id = cursor.read_u16::<BigEndian>().context("Read sender_id")?;
+        let sequence = cursor.read_u16::<BigEndian>().context("Read sequence")?;
+        let timestamp = cursor.read_u32::<BigEndian>().context("Read timestamp")?;
+        let opus_data = data[8..].to_vec();
+        Ok(Self { sender_id, sequence, timestamp, opus_data })
+    }
+}

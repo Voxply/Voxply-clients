@@ -1,7 +1,9 @@
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 use std::time::Duration;
+use tokio::sync::RwLock as TokioRwLock;
 
 use anyhow::Result;
 use ringbuf::HeapRb;
@@ -52,6 +54,11 @@ pub struct AudioPipeline {
     /// buffer would fill and packets would be dropped at the kernel layer
     /// either way; doing it explicitly keeps the rest of the pipeline calm.
     pub deafened: Arc<AtomicBool>,
+    /// Per-sender gain map: sender_id → gain multiplier [0.0, 2.0], default 1.0.
+    /// Shared with the pipeline's receive task; update to control each speaker's volume.
+    pub gain_map: Arc<TokioRwLock<HashMap<u16, f32>>>,
+    /// Roster map: sender_id → pubkey. Updated by the Tauri WS handler on voice_roster_update.
+    pub roster_map: Arc<TokioRwLock<HashMap<u16, String>>>,
 }
 
 fn resolve_opus_rate(device_rate: u32) -> u32 {
@@ -133,6 +140,8 @@ impl AudioPipeline {
             level_rx: Some(level_rx),
             muted: Arc::new(AtomicBool::new(false)),
             deafened: Arc::new(AtomicBool::new(false)),
+            gain_map: Arc::new(TokioRwLock::new(HashMap::new())),
+            roster_map: Arc::new(TokioRwLock::new(HashMap::new())),
         })
     }
 
@@ -171,6 +180,9 @@ impl AudioPipeline {
 
         let muted = Arc::new(AtomicBool::new(false));
         let deafened = Arc::new(AtomicBool::new(false));
+
+        let gain_map = Arc::new(TokioRwLock::new(HashMap::<u16, f32>::new()));
+        let roster_map = Arc::new(TokioRwLock::new(HashMap::<u16, String>::new()));
 
         // Send task: capture → encode → UDP, plus RMS-based VAD + level meter
         let send_socket = socket.clone();
@@ -254,23 +266,45 @@ impl AudioPipeline {
             }
         });
 
-        // Receive task: UDP → decode → playback
+        // Receive task: UDP → decode → playback (per-sender decoder + gain)
         let recv_socket = socket.clone();
         let recv_deafened = deafened.clone();
+        let recv_gain_map = gain_map.clone();
         let recv_task = tokio::spawn(async move {
-            let mut decoder = VoiceDecoder::new(opus_rate).expect("Failed to create decoder");
+            // Per-sender decoder map: sender_id → VoiceDecoder
+            let mut decoders: HashMap<u16, VoiceDecoder> = HashMap::new();
 
             loop {
-                match recv_socket.recv().await {
+                match recv_socket.recv_from_hub().await {
                     Ok((packet, _from)) => {
+                        if recv_deafened.load(Ordering::Relaxed) {
+                            continue;
+                        }
+                        // Get or create a decoder for this sender
+                        let decoder = decoders
+                            .entry(packet.sender_id)
+                            .or_insert_with(|| VoiceDecoder::new(opus_rate).expect("Failed to create decoder"));
+
                         match decoder.decode(&packet.opus_data) {
                             Ok(samples) => {
-                                if !recv_deafened.load(Ordering::Relaxed) {
+                                // Apply per-sender gain
+                                let gain = {
+                                    let gm = recv_gain_map.read().await;
+                                    *gm.get(&packet.sender_id).unwrap_or(&1.0f32)
+                                };
+                                if gain == 0.0 {
+                                    // Fully muted: skip
+                                } else if (gain - 1.0f32).abs() < 0.001 {
+                                    // Unity gain: push as-is
                                     let _ = playback_prod.push_slice(samples);
+                                } else {
+                                    // Apply gain
+                                    let gained: Vec<f32> = samples.iter().map(|s| (s * gain).clamp(-1.0, 1.0)).collect();
+                                    let _ = playback_prod.push_slice(&gained);
                                 }
                             }
                             Err(e) => {
-                                tracing::warn!("Decode error: {e}");
+                                tracing::warn!("Decode error from sender {}: {e}", packet.sender_id);
                             }
                         }
                     }
@@ -292,6 +326,8 @@ impl AudioPipeline {
             level_rx: Some(level_rx),
             muted,
             deafened,
+            gain_map,
+            roster_map,
         })
     }
 
