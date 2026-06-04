@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { open } from "@tauri-apps/plugin-shell";
 import { MISSIONS_SERVICE_URL } from "../constants";
+import { CosmeticsSection } from "./CosmeticsSection";
 
 interface Mission {
   id: string;
@@ -105,6 +106,7 @@ export function MissionsSection({ publicKey }: { publicKey: string | null }) {
 
   return (
     <div className="missions-panel">
+      <CosmeticsSection publicKey={publicKey} />
       <p className="missions-intro">
         Complete voluntary missions to earn <strong>Sparks</strong> — redeemable for cosmetic items.
         Missions never affect your experience or capabilities.

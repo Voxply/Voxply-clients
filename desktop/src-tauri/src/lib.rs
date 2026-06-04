@@ -2556,6 +2556,14 @@ fn get_my_public_key() -> Result<String, String> {
     Ok(identity.public_key_hex())
 }
 
+#[tauri::command]
+fn sign_message(message: String) -> Result<String, String> {
+    let path = Identity::default_path().map_err(|e| e.to_string())?;
+    let (identity, _) = Identity::load_or_create(&path).map_err(|e| e.to_string())?;
+    let sig = identity.sign(message.as_bytes());
+    Ok(hex::encode(sig.to_bytes()))
+}
+
 /// Export the identity file to an encrypted `.voxback` file in `~/.voxply/`.
 ///
 /// Uses Argon2id for key derivation and AES-256-GCM for encryption.
@@ -6091,6 +6099,7 @@ pub fn run() {
             get_recovery_phrase,
             recover_identity_from_phrase,
             get_my_public_key,
+            sign_message,
             get_me,
             get_hub_branding,
             update_hub_branding,

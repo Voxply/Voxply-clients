@@ -6379,3 +6379,19 @@ a.embed-title:hover {
 .mission-error { font-size: 12px; color: #ed4245; margin-top: 6px; }
 .missions-loading, .missions-empty, .missions-error { padding: 24px; text-align: center; color: var(--text-muted, #96989d); font-size: 14px; }
 .missions-error button { margin-top: 8px; padding: 6px 12px; cursor: pointer; border-radius: 4px; background: var(--bg-tertiary, #1e1f22); border: 1px solid var(--border-color, #3a3d44); color: var(--text-normal, #dbdee1); }
+.cosmetics-section { margin-top: 20px; padding-top: 16px; border-top: 1px solid var(--border-color, #3a3d44); }
+.cosmetics-balance { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: 600; margin-bottom: 12px; color: var(--accent-color, #5865f2); }
+.cosmetics-refresh { background: none; border: none; cursor: pointer; font-size: 16px; color: var(--text-muted, #96989d); padding: 2px 4px; }
+.cosmetics-refresh:hover { color: var(--text-normal, #dbdee1); }
+.cosmetics-catalog-title { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted, #96989d); margin-bottom: 8px; }
+.cosmetics-catalog-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.cosmetics-item { background: var(--bg-secondary, #2b2d31); border-radius: 6px; padding: 10px 12px; border: 1px solid var(--border-color, #3a3d44); }
+.cosmetics-item.owned { border-color: var(--accent-color, #5865f2); opacity: 0.8; }
+.cosmetics-item-name { font-size: 13px; font-weight: 600; color: var(--text-normal, #dbdee1); }
+.cosmetics-item-desc { font-size: 12px; color: var(--text-muted, #96989d); margin: 2px 0 6px; }
+.cosmetics-item-footer { display: flex; justify-content: space-between; align-items: center; }
+.cosmetics-item-cost { font-size: 12px; color: var(--text-muted, #96989d); }
+.cosmetics-item-owned { font-size: 12px; color: #3ba55c; font-weight: 600; }
+.cosmetics-item-redeem { padding: 4px 12px; border-radius: 4px; font-size: 12px; cursor: pointer; background: var(--accent-color, #5865f2); color: #fff; border: none; }
+.cosmetics-item-redeem:disabled { opacity: 0.5; cursor: default; }
+.cosmetics-error { font-size: 12px; color: #ed4245; margin-bottom: 8px; }
