@@ -169,6 +169,9 @@ export const EXPIRY_OPTIONS: { label: string; seconds: number | null }[] = [
   { label: "7 days", seconds: 7 * 24 * 60 * 60 },
 ];
 
+export const MISSIONS_SERVICE_URL = "https://discovery.voxply.app";
+export const MISSIONS_ENABLED = true;
+
 export const THEMES: {
   id: "calm" | "classic" | "linear" | "light";
   name: string;
