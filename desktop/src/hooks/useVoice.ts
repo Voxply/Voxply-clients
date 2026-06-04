@@ -41,6 +41,28 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
   );
   const [showSharePicker, setShowSharePicker] = useState(false);
 
+  const [voiceGains, setVoiceGainsState] = useState<Record<string, number>>(() => {
+    try {
+      const stored = localStorage.getItem("voxply.voiceGains");
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  async function setVoiceGain(publicKey: string, gainPct: number) {
+    const gain = Math.max(0, Math.min(200, gainPct)) / 100;
+    const next = { ...voiceGains, [publicKey]: gainPct };
+    if (gainPct === 100) delete next[publicKey];
+    setVoiceGainsState(next);
+    try {
+      localStorage.setItem("voxply.voiceGains", JSON.stringify(next));
+      await invoke("set_voice_gain", { publicKey, gain });
+    } catch (e) {
+      console.error("set_voice_gain failed:", e);
+    }
+  }
+
   const { sharing, startShare, stopShare, kbps: shareKbps } = useScreenShare(voiceChannelId);
   const { streams: activeScreenShares, viewerRef: screenShareViewerRef } =
     useScreenShareViewer(voiceChannelId);
@@ -391,5 +413,7 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     onParticipantLeft,
     onMicLevel,
     onHubErrorVoiceJoin,
+    voiceGains,
+    setVoiceGain,
   };
 }

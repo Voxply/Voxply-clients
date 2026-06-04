@@ -94,6 +94,8 @@ interface Props {
   onToggleDnd: () => void;
   userStatus: UserStatus;
   onStatusChange: (s: UserStatus) => void;
+  voiceGains: Record<string, number>;
+  onSetVoiceGain: (publicKey: string, gainPct: number) => void;
 }
 
 export function ChannelSidebar({
@@ -113,6 +115,7 @@ export function ChannelSidebar({
   onOpenFriends, onToggleSelfMute, onToggleSelfDeafen, onOpenSettings,
   onDragEnd, onToggleHideSilenced, sharing, onScreenShare, hubStreamsCount, onToggleHubStreams, dndActive, onToggleDnd,
   userStatus, onStatusChange,
+  voiceGains, onSetVoiceGain,
 }: Props) {
   const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -347,11 +350,13 @@ export function ChannelSidebar({
                         isCurrentVoiceChannel={voiceChannelId === n.node.id}
                         style={{ paddingLeft: n.depth * CHANNEL_INDENT_PX }}
                         tabIndex={channelFocusIndex === idx ? 0 : -1}
+                        voiceGains={voiceGains}
                         onClick={() => { setChannelFocusIndex(idx); onSelectChannel(n.node); }}
                         onDoubleClick={() => { if (voiceChannelId !== n.node.id) onVoiceJoin(n.node); }}
                         onContextMenu={(e) => { e.stopPropagation(); onChannelContextMenu(e, n.node); }}
                         onKeyDown={(e) => handleChannelKeyDown(e, idx)}
                         onSettings={isAdmin ? (_e) => onOpenChannelSettings(n.node) : undefined}
+                        onSetVoiceGain={onSetVoiceGain}
                       />
                     )
                   )}

@@ -3390,6 +3390,8 @@ function App() {
                   onToggleDnd={toggleDnd}
                   userStatus={userStatus}
                   onStatusChange={handleStatusChange}
+                  voiceGains={voice.voiceGains}
+                  onSetVoiceGain={voice.setVoiceGain}
                 />
                 <ContentArea
                   view={view}

@@ -30,6 +30,68 @@ export function SortableHubIcon({
   );
 }
 
+function VoiceParticipantRow({
+  participant,
+  gain,
+  onSetGain,
+}: {
+  participant: VoiceParticipant;
+  gain: number;
+  onSetGain?: (publicKey: string, gainPct: number) => void;
+}) {
+  const [open, setOpen] = React.useState(false);
+  const label = participant.display_name || participant.public_key.slice(0, 12);
+
+  return (
+    <li
+      className="channel-participant"
+      title={participant.public_key}
+      onContextMenu={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setOpen((v) => !v);
+      }}
+    >
+      <span className="channel-participant-icon" aria-hidden="true">🎙️</span>
+      {label}
+      {gain !== 100 && (
+        <span
+          className={`participant-gain-badge ${gain === 0 ? "gain-muted" : gain > 100 ? "gain-boosted" : "gain-reduced"}`}
+          aria-label={`Volume: ${gain}%`}
+        >
+          {gain === 0 ? "🔇" : gain > 100 ? "🔊" : "🔉"}
+        </span>
+      )}
+      {open && onSetGain && (
+        <div
+          className="participant-volume-popover"
+          onClick={(e) => e.stopPropagation()}
+        >
+          <div className="participant-volume-label">Volume: {gain}%</div>
+          <input
+            type="range"
+            min={0}
+            max={200}
+            step={5}
+            value={gain}
+            className="participant-volume-slider"
+            onChange={(e) => onSetGain(participant.public_key, Number(e.target.value))}
+          />
+          <div className="participant-volume-actions">
+            <button
+              className="participant-volume-reset"
+              onClick={() => { onSetGain(participant.public_key, 100); setOpen(false); }}
+            >
+              Reset
+            </button>
+            <button className="participant-volume-close" onClick={() => setOpen(false)}>✕</button>
+          </div>
+        </div>
+      )}
+    </li>
+  );
+}
+
 export function SortableChannelItem({
   channel,
   selected,
@@ -41,11 +103,13 @@ export function SortableChannelItem({
   isCurrentVoiceChannel,
   style,
   tabIndex,
+  voiceGains,
   onClick,
   onDoubleClick,
   onContextMenu,
   onKeyDown,
   onSettings,
+  onSetVoiceGain,
 }: {
   channel: Channel;
   selected: boolean;
@@ -57,11 +121,13 @@ export function SortableChannelItem({
   isCurrentVoiceChannel: boolean;
   style?: React.CSSProperties;
   tabIndex?: number;
+  voiceGains?: Record<string, number>;
   onClick: () => void;
   onDoubleClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onKeyDown?: (e: React.KeyboardEvent) => void;
   onSettings?: (e: React.MouseEvent) => void;
+  onSetVoiceGain?: (publicKey: string, gainPct: number) => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
     useSortable({ id: channel.id });
@@ -133,14 +199,12 @@ export function SortableChannelItem({
       {participants.length > 0 && (
         <ul className="channel-participants">
           {participants.map((p) => (
-            <li
+            <VoiceParticipantRow
               key={p.public_key}
-              className="channel-participant"
-              title={p.public_key}
-            >
-              <span className="channel-participant-icon" aria-hidden="true">🎙️</span>
-              {p.display_name || p.public_key.slice(0, 12)}
-            </li>
+              participant={p}
+              gain={voiceGains?.[p.public_key] ?? 100}
+              onSetGain={onSetVoiceGain}
+            />
           ))}
         </ul>
       )}
