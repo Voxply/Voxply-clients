@@ -115,6 +115,10 @@ pub struct AudioPipeline {
     /// Receives the post-denoise RMS level of each captured frame (decimated
     /// to ~20 Hz). Range is roughly 0..0.3 for normal speech.
     pub level_rx: Option<mpsc::UnboundedReceiver<f32>>,
+    /// Receives `(sender_id, is_whisper)` events when a sender's whisper state
+    /// transitions. `true` = whisper packets started arriving; `false` = stopped.
+    /// Available on pipelines started with `start_p2p` / `start_p2p_with_settings`.
+    pub whisper_rx: Option<mpsc::UnboundedReceiver<(u16, bool)>>,
     /// When set, the send task drops outbound packets before they hit the
     /// socket. Capture and VAD continue so the user still sees their level.
     pub muted: Arc<AtomicBool>,
@@ -209,6 +213,7 @@ impl AudioPipeline {
             local_udp_port: 0,
             speaking_rx: None,
             level_rx: Some(level_rx),
+            whisper_rx: None,
             muted: Arc::new(AtomicBool::new(false)),
             deafened: Arc::new(AtomicBool::new(false)),
             gain_map: Arc::new(TokioRwLock::new(HashMap::new())),
@@ -250,6 +255,7 @@ impl AudioPipeline {
         let socket = Arc::new(socket);
 
         let (speaking_tx, speaking_rx) = mpsc::unbounded_channel::<bool>();
+        let (whisper_tx, whisper_rx) = mpsc::unbounded_channel::<(u16, bool)>();
 
         let muted = Arc::new(AtomicBool::new(false));
         let deafened = Arc::new(AtomicBool::new(false));
@@ -351,17 +357,28 @@ impl AudioPipeline {
             }
         });
 
-        // Receive task: UDP → decode → playback (per-sender decoder + gain)
+        // Receive task: UDP → decode → playback (per-sender decoder + gain + whisper state)
         let recv_socket = socket.clone();
         let recv_deafened = deafened.clone();
         let recv_gain_map = gain_map.clone();
         let recv_task = tokio::spawn(async move {
             // Per-sender decoder map: sender_id → VoiceDecoder
             let mut decoders: HashMap<u16, VoiceDecoder> = HashMap::new();
+            // Per-sender whisper state: sender_id → currently_whispering
+            let mut whisper_state: HashMap<u16, bool> = HashMap::new();
 
             loop {
                 match recv_socket.recv_from_hub().await {
                     Ok((packet, _from)) => {
+                        // Track whisper state transitions before checking deafened,
+                        // so indicators update even when deafened.
+                        let is_whisper = packet.is_whisper();
+                        let was_whispering = whisper_state.get(&packet.sender_id).copied().unwrap_or(false);
+                        if is_whisper != was_whispering {
+                            whisper_state.insert(packet.sender_id, is_whisper);
+                            let _ = whisper_tx.send((packet.sender_id, is_whisper));
+                        }
+
                         if recv_deafened.load(Ordering::Relaxed) {
                             continue;
                         }
@@ -409,6 +426,7 @@ impl AudioPipeline {
             local_udp_port: actual_local_port,
             speaking_rx: Some(speaking_rx),
             level_rx: Some(level_rx),
+            whisper_rx: Some(whisper_rx),
             muted,
             deafened,
             gain_map,
