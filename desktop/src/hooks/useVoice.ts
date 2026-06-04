@@ -18,6 +18,7 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
   const [voiceChannelId, setVoiceChannelId] = useState<string | null>(null);
   const [selfMuted, setSelfMuted] = useState(false);
   const [selfDeafened, setSelfDeafened] = useState(false);
+  const [speakingPubkeys, setSpeakingPubkeys] = useState<Set<string>>(new Set());
   const [voicePartByChannel, setVoicePartByChannel] = useState<Record<string, VoiceParticipant[]>>({});
   const [voiceActiveUsers, setVoiceActiveUsers] = useState<Set<string>>(new Set());
   const [voiceInputDevice, setVoiceInputDevice] = useState<string>("");
@@ -106,10 +107,24 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     const handle = setInterval(tick, 1500);
     let unlisten: (() => void) | undefined;
     listen<void>("voice-update", () => { if (!cancelled) tick(); }).then((fn) => { unlisten = fn; });
+
+    let unlistenSpeaking: (() => void) | undefined;
+    listen<{ public_key: string; speaking: boolean }>("voice-participant-speaking", (e) => {
+      if (cancelled) return;
+      const { public_key, speaking } = e.payload;
+      setSpeakingPubkeys(prev => {
+        const next = new Set(prev);
+        if (speaking) next.add(public_key);
+        else next.delete(public_key);
+        return next;
+      });
+    }).then((fn) => { unlistenSpeaking = fn; });
+
     return () => {
       cancelled = true;
       clearInterval(handle);
       unlisten?.();
+      unlistenSpeaking?.();
     };
   }, [activeHubId]);
 
@@ -433,6 +448,7 @@ export function useVoice({ activeHubId, selectedChannel, setError, setToast }: U
     voiceChannelId,
     selfMuted,
     selfDeafened,
+    speakingPubkeys,
     voicePartByChannel,
     voiceActiveUsers,
     voiceInputDevice,

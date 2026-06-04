@@ -6473,3 +6473,32 @@ a.embed-title:hover {
 .video-self-view { position: absolute; bottom: 80px; right: 12px; width: 120px; border-radius: 6px; overflow: hidden; border: 2px solid var(--border-color, #3a3d44); }
 .video-self-view .video-tile-video { width: 100%; aspect-ratio: 4/3; object-fit: cover; transform: scaleX(-1); }
 .video-self-view .video-tile-name { font-size: 10px; }
+.video-bg-picker-wrap { position: relative; }
+.video-bg-picker {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: var(--bg-secondary, #2b2d31);
+  border: 1px solid var(--border-color, #3a3d44);
+  border-radius: 6px;
+  padding: 6px;
+  display: flex;
+  gap: 4px;
+  white-space: nowrap;
+  z-index: 100;
+}
+.video-bg-picker button {
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  border: 1px solid var(--border-color, #3a3d44);
+  background: var(--bg-tertiary, #1e1f22);
+  color: var(--text-normal, #dbdee1);
+  font-size: 12px;
+}
+.video-bg-picker button.active {
+  background: var(--accent-color, #5865f2);
+  color: #fff;
+  border-color: var(--accent-color, #5865f2);
+}

@@ -96,6 +96,12 @@ interface Props {
   onStatusChange: (s: UserStatus) => void;
   voiceGains: Record<string, number>;
   onSetVoiceGain: (publicKey: string, gainPct: number) => void;
+  videoEnabled: boolean;
+  onVideoToggle: () => void;
+  backgroundMode: string;
+  showBgPicker: boolean;
+  onShowBgPickerChange: (v: boolean) => void;
+  onChangeBackground: (mode: "none" | "blur") => void;
 }
 
 export function ChannelSidebar({
@@ -116,6 +122,7 @@ export function ChannelSidebar({
   onDragEnd, onToggleHideSilenced, sharing, onScreenShare, hubStreamsCount, onToggleHubStreams, dndActive, onToggleDnd,
   userStatus, onStatusChange,
   voiceGains, onSetVoiceGain,
+  videoEnabled, onVideoToggle, backgroundMode, showBgPicker, onShowBgPickerChange, onChangeBackground,
 }: Props) {
   const { t } = useTranslation();
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -548,6 +555,40 @@ export function ChannelSidebar({
                 >
                   {sharing ? "⏹" : "🖥"}
                 </button>
+                <button
+                  onClick={onVideoToggle}
+                  className={`btn-icon-gear ${videoEnabled ? "active" : ""}`}
+                  title={videoEnabled ? "Turn off camera" : "Turn on camera"}
+                >
+                  {videoEnabled ? "📹" : "📷"}
+                </button>
+                {videoEnabled && (
+                  <div className="video-bg-picker-wrap">
+                    <button
+                      className="btn-icon-gear"
+                      onClick={() => onShowBgPickerChange(!showBgPicker)}
+                      title="Background effects"
+                    >
+                      🖼
+                    </button>
+                    {showBgPicker && (
+                      <div className="video-bg-picker">
+                        <button
+                          onClick={() => { onChangeBackground("none"); onShowBgPickerChange(false); }}
+                          className={backgroundMode === "none" ? "active" : ""}
+                        >
+                          None
+                        </button>
+                        <button
+                          onClick={() => { onChangeBackground("blur"); onShowBgPickerChange(false); }}
+                          className={backgroundMode === "blur" ? "active" : ""}
+                        >
+                          Blur
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
                 {hubStreamsCount > 0 && (
                   <button
                     onClick={onToggleHubStreams}

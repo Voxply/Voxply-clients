@@ -44,6 +44,8 @@ import { ScreenSharePicker } from "./components/ScreenSharePicker";
 import { HubStreamsPanel } from "./components/HubStreamsPanel";
 import { KeyboardShortcuts } from "./components/KeyboardShortcuts";
 import { useVoice } from "./hooks/useVoice";
+import { useVideo } from "./hooks/useVideo";
+import { VideoGrid } from "./components/VideoGrid";
 import { MAX_ATTACHMENT_BYTES, DEMO_HUB_URL } from "./constants";
 import { formatPubkey, mentionsName, newProfileId } from "./utils/format";
 import { playMentionPing } from "./utils/audio";
@@ -753,6 +755,48 @@ function App() {
   }, [myDisplayName]);
 
   const voice = useVoice({ activeHubId, selectedChannel, setError, setToast });
+
+  const video = useVideo({
+    activeHubId,
+    voiceChannelId: voice.voiceChannelId,
+    publicKey,
+    voiceSpeakingPubkeys: voice.speakingPubkeys,
+  });
+
+  const [showBgPicker, setShowBgPicker] = useState(false);
+
+  function buildTiles(
+    remoteStreams: Map<string, MediaStream>,
+    videoPubkeys: Set<string>,
+    tileUsers: User[],
+    tileSpeak: Set<string>,
+    pinnedPubkey: string | null,
+  ) {
+    const tiles: {
+      pubkey: string;
+      displayName: string;
+      stream: MediaStream;
+      speaking: boolean;
+      pinned: boolean;
+    }[] = [];
+    for (const [pk, stream] of remoteStreams) {
+      if (!videoPubkeys.has(pk)) continue;
+      const u = tileUsers.find((x) => x.public_key === pk);
+      tiles.push({
+        pubkey: pk,
+        displayName: u?.display_name ?? pk.slice(0, 8),
+        stream,
+        speaking: tileSpeak.has(pk),
+        pinned: pinnedPubkey === pk,
+      });
+    }
+    tiles.sort(
+      (a, b) =>
+        (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0) ||
+        (b.speaking ? 1 : 0) - (a.speaking ? 1 : 0),
+    );
+    return tiles;
+  }
 
   // Farm admin state
   const [showFarmSettings, setShowFarmSettings] = useState(false);
@@ -3438,7 +3482,28 @@ function App() {
                   onStatusChange={handleStatusChange}
                   voiceGains={voice.voiceGains}
                   onSetVoiceGain={voice.setVoiceGain}
+                  videoEnabled={video.videoEnabled}
+                  onVideoToggle={() => video.videoEnabled ? video.disableVideo() : video.enableVideo()}
+                  backgroundMode={video.backgroundMode}
+                  showBgPicker={showBgPicker}
+                  onShowBgPickerChange={setShowBgPicker}
+                  onChangeBackground={video.changeBackground}
                 />
+                {(video.videoEnabled || video.remoteStreams.size > 0) && (
+                  <VideoGrid
+                    tiles={buildTiles(
+                      video.remoteStreams,
+                      video.videoPubkeys,
+                      users,
+                      voice.speakingPubkeys,
+                      video.pinnedPubkey,
+                    )}
+                    selfStream={video.processedStream}
+                    selfName={myDisplayName ?? "You"}
+                    onPin={video.setPinnedPubkey}
+                    onUnpin={() => video.setPinnedPubkey(null)}
+                  />
+                )}
                 <ContentArea
                   view={view}
                   activeHubId={activeHubId}
