@@ -80,6 +80,7 @@ import { HubSidebar } from "./components/HubSidebar";
 import { ChannelSidebar } from "./components/ChannelSidebar";
 import { ContentArea } from "./components/ContentArea";
 import { DiscoverPage } from "./components/DiscoverPage";
+import { WelcomeScreen } from "./components/WelcomeScreen";
 import { Lobby } from "./components/Lobby";
 import { BotChallenge } from "./components/BotChallenge";
 import { SurveyComponent } from "./components/Survey";
@@ -825,6 +826,13 @@ function App() {
   // Settings
   const [showSettings, setShowSettings] = useState(false);
   const [showDiscover, setShowDiscover] = useState(false);
+  const [showWelcome, setShowWelcome] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("voxply.seenWelcome") !== "1";
+    } catch {
+      return true;
+    }
+  });
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [theme, setTheme] = useState<"calm" | "classic" | "linear" | "light">("calm");
   const [profiles, setProfiles] = useState<NamedProfile[]>([]);
@@ -1941,7 +1949,7 @@ function App() {
 
   // Debounced fetch of /info while the user types a hub URL.
   useEffect(() => {
-    if (!showAddHub) {
+    if (!showAddHub && !showWelcome) {
       setHubPreview({ state: "idle" });
       return;
     }
@@ -1983,7 +1991,7 @@ function App() {
       cancelled = true;
       clearTimeout(handle);
     };
-  }, [hubUrl, showAddHub]);
+  }, [hubUrl, showAddHub, showWelcome]);
 
   async function handleAddHub(challengeToken?: string) {
     setLoading(true);
@@ -2104,6 +2112,7 @@ function App() {
           setHubs(allHubs);
           const active = allHubs.find((h) => h.is_active) ?? allHubs[0];
           setActiveHubId(active.hub_id);
+          setShowWelcome(false);
         }
       } catch (e) {
         console.error("Auto-connect failed:", e);
@@ -2147,6 +2156,10 @@ function App() {
     }
     void checkFarmAdmin();
   }, [publicKey, hubs.length]);
+
+  useEffect(() => {
+    if (hubs.length > 0) setShowWelcome(false);
+  }, [hubs.length]);
 
   // Suppress the webview's default right-click menu (Reload / Inspect /
   // Back). Tauri 2 still enables it by default and a stray right-click
@@ -2934,6 +2947,13 @@ function App() {
     setShowSettings(false);
   }
 
+  function dismissWelcome() {
+    try {
+      localStorage.setItem("voxply.seenWelcome", "1");
+    } catch {}
+    setShowWelcome(false);
+  }
+
 
   async function handleRenameChannel(channel: Channel) {
     const next = prompt("Rename channel", channel.name);
@@ -3444,56 +3464,26 @@ function App() {
                 onJoinHub={handleDiscoverJoin}
               />
             ) : !hasActiveHub ? (
-              <div className="empty-state welcome">
-                <h1>Welcome to Voxply</h1>
-                <p className="welcome-tagline">
-                  Decentralized voice chat where you bring your identity
-                  with you. No accounts, no central server.
-                </p>
-
-                <p className="welcome-section-heading">What Voxply is</p>
-                <ul className="welcome-points">
-                  <li>
-                    <strong>Hubs</strong> are independently-run servers — pick
-                    any one to join, or run your own. The same you works on
-                    every hub.
-                  </li>
-                  <li>
-                    <strong>Your identity</strong> is a keypair stored on this
-                    device, not an account on a service. Nobody can deplatform
-                    you.
-                  </li>
-                  <li>
-                    <strong>Alliances</strong> let hubs share channels with
-                    each other so communities stay connected without merging.
-                  </li>
-                </ul>
-
-                <p className="welcome-section-heading">Join your first hub</p>
-                <div className="welcome-cta-row">
-                  <button className="primary" onClick={() => setShowDiscover(true)}>
-                    Browse public hubs
-                  </button>
-                  <button className="btn-secondary" onClick={() => setShowAddHub(true)}>
-                    Add by URL
-                  </button>
-                  {DEMO_HUB_URL && (
-                    <button className="btn-secondary" onClick={openDemoHub}>
-                      Try demo hub
-                    </button>
-                  )}
-                  <button className="btn-secondary" onClick={handleImportBackup}>
-                    Restore from backup
+              showWelcome ? (
+                <WelcomeScreen
+                  hubUrl={hubUrl}
+                  onHubUrlChange={handleHubUrlChange}
+                  hubPreview={hubPreview}
+                  loading={loading}
+                  error={error}
+                  onJoin={() => handleAddHub()}
+                  onJoinDemo={openDemoHub}
+                  onBrowse={() => setShowDiscover(true)}
+                  onDismiss={dismissWelcome}
+                />
+              ) : (
+                <div className="empty-state">
+                  <p className="muted">No hubs connected.</p>
+                  <button className="primary" onClick={() => setShowAddHub(true)}>
+                    Add hub
                   </button>
                 </div>
-                <p className="welcome-hint muted">
-                  Browse public hubs to find communities to join, or paste
-                  a hub URL directly if you already have one.
-                </p>
-                <button className="welcome-settings-link" onClick={openSettings}>
-                  ⚙ Set up your profile first
-                </button>
-              </div>
+              )
             ) : activeHubId && hubScope[activeHubId] === "lobby" ? (
               <Lobby
                 hubUrl={hubs.find((h) => h.hub_id === activeHubId)?.hub_url ?? ""}
