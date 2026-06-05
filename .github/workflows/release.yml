@@ -130,6 +130,7 @@ jobs:
             Write-Output "Binary not yet built, will sign installer instead"
           }
 
+      # Authenticode signing activates when WINDOWS_CERT_THUMBPRINT is set. See docs/code-signing.md
       - name: Tauri build
         working-directory: desktop/desktop
         env:
