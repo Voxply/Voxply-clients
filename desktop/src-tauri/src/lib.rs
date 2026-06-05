@@ -7382,6 +7382,19 @@ async fn get_cert_settings(hub_url: String, state: State<'_, AppState>) -> Resul
 }
 
 #[tauri::command]
+async fn get_audit_log(hub_url: String, state: State<'_, AppState>) -> Result<serde_json::Value, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let res = state.http_client
+        .get(format!("{}/admin/audit-log?limit=100", hub_url.trim_end_matches('/')))
+        .bearer_auth(&token)
+        .send().await.map_err(|e| e.to_string())?;
+    if !res.status().is_success() {
+        return Err(format!("HTTP {}", res.status()));
+    }
+    res.json::<serde_json::Value>().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
 async fn list_issued_certs(hub_url: String, state: State<'_, AppState>) -> Result<Vec<serde_json::Value>, String> {
     let token = session_for_url(&state, &hub_url)?;
     let res = state.http_client
@@ -8131,6 +8144,7 @@ pub fn run() {
             load_whisper_lists,
             save_whisper_lists,
             get_cert_settings,
+            get_audit_log,
             list_issued_certs,
             save_cert_settings,
             issue_cert,

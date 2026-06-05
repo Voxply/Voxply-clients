@@ -846,6 +846,17 @@ export interface PairedDevice {
   is_this_device: boolean;
 }
 
+// ---- Admin audit log ----
+
+export interface AuditEntry {
+  id: string;
+  ts: number;
+  actor_pubkey: string;
+  action: string;
+  target: string | null;
+  detail: string | null;
+}
+
 // ---- WebRTC screen share ----
 
 export interface WsScreenShareOffer {

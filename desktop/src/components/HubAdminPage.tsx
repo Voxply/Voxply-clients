@@ -28,6 +28,7 @@ import { HubTagsSection } from "./HubTagsSection";
 import { HubBadgesSection } from "./HubBadgesSection";
 import { GamesAdminSection } from "./GamesAdminSection";
 import { HubCertificationsAdminSection } from "./HubCertificationsAdminSection";
+import { HubAuditLogSection } from "./HubAuditLogSection";
 
 export type HubAdminTab =
   | "overview"
@@ -47,7 +48,8 @@ export type HubAdminTab =
   | "tags"
   | "badges"
   | "games"
-  | "certifications";
+  | "certifications"
+  | "audit-log";
 
 export interface HubAdminPageProps {
   tab: HubAdminTab;
@@ -201,6 +203,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
     { id: "badges", label: "Badges" },
     { id: "games", label: "Games" },
     { id: "certifications", label: "Certifications" },
+    { id: "audit-log", label: "Audit Log" },
   ];
 
   return (
@@ -679,6 +682,12 @@ export function HubAdminPage(props: HubAdminPageProps) {
           <section>
             <h1>Certifications</h1>
             <HubCertificationsAdminSection hubUrl={props.activeHubUrl} />
+          </section>
+        )}
+        {props.tab === "audit-log" && (
+          <section>
+            <h1>Audit Log</h1>
+            <HubAuditLogSection hubUrl={props.activeHubUrl} />
           </section>
         )}
       </main>
