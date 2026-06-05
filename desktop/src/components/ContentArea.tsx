@@ -446,7 +446,10 @@ export function ContentArea({
                     </p>
                     <button
                       className="btn-primary"
-                      onClick={() => setGroupDmAcknowledged(true)}
+                      onClick={() => {
+                        setGroupDmAcknowledged(true);
+                        invoke("push_group_sender_key", { convId: selectedConversation!.id }).catch(() => {});
+                      }}
                     >
                       {t("dm.group_banner_got_it")}
                     </button>
@@ -468,7 +471,7 @@ export function ContentArea({
               </div>
               {selectedConversation.conv_type === "group" && (
                 <div className="dm-group-banner">
-                  {t("dm.group_banner")}
+                  {t("dm.group_e2e_active")}
                 </div>
               )}
               <div className="messages">

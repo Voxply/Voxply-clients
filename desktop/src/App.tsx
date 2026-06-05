@@ -921,6 +921,8 @@ function App() {
     viewRef.current = view;
   }, [view]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const conversationsRef = useRef<Conversation[]>([]);
+  useEffect(() => { conversationsRef.current = conversations; }, [conversations]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [dmMessages, setDmMessages] = useState<Record<string, DmMessage[]>>({});
   const selectedConversationIdRef = useRef<string | null>(null);
@@ -1370,6 +1372,25 @@ function App() {
             selectedConversationIdRef.current === conversation_id;
           if (!lookingHere && msg.sender !== publicKeyRef.current) {
             setUnreadDms((prev) => ({ ...prev, [conversation_id]: true }));
+          }
+          const conv = conversationsRef.current.find((c) => c.id === conversation_id);
+          if (conv?.conv_type === "group" && msg.sender !== publicKeyRef.current) {
+            invoke("fetch_group_sender_keys", { convId: conversation_id })
+              .then(() => invoke<DmMessageFull[]>("get_dm_messages", { conversationId: conversation_id }))
+              .then((history) => {
+                setDmMessages((prev) => ({
+                  ...prev,
+                  [conversation_id]: history.map((m) => ({
+                    sender: m.sender,
+                    sender_name: m.sender_name,
+                    content: m.content,
+                    timestamp: m.created_at,
+                    attachments: m.attachments,
+                    is_encrypted: m.is_encrypted,
+                  })),
+                }));
+              })
+              .catch(() => {});
           }
         })
       );
@@ -2723,15 +2744,16 @@ function App() {
     const attachments = pendingAttachments;
     if (!content.trim() && attachments.length === 0) return;
 
-    const doSend = async (encryptedEnvelope?: object) => {
+    const doSend = async (encryptedEnvelope?: object, groupEncryptedEnvelope?: object) => {
       setInputText("");
       setPendingAttachments([]);
       try {
         await invoke("send_dm", {
           conversationId: selectedConversation.id,
-          content: encryptedEnvelope ? undefined : content,
+          content: (encryptedEnvelope || groupEncryptedEnvelope) ? undefined : content,
           attachments: attachments.length > 0 ? attachments : undefined,
           encryptedEnvelope,
+          groupEncryptedEnvelope,
         });
         setDmMessages((prev) => {
           const list = prev[selectedConversation.id] || [];
@@ -2756,7 +2778,28 @@ function App() {
     };
 
     if (selectedConversation.conv_type === "group") {
-      await doSend();
+      try {
+        const groupEnv = await invoke<object>("encrypt_group_dm", {
+          convId: selectedConversation.id,
+          content,
+        });
+        await doSend(undefined, groupEnv);
+      } catch (e) {
+        if (String(e).includes("no_sender_key")) {
+          try {
+            await invoke("push_group_sender_key", { convId: selectedConversation.id });
+            const groupEnv = await invoke<object>("encrypt_group_dm", {
+              convId: selectedConversation.id,
+              content,
+            });
+            await doSend(undefined, groupEnv);
+          } catch {
+            await doSend();
+          }
+        } else {
+          await doSend();
+        }
+      }
       return;
     }
 
