@@ -47,6 +47,9 @@ export function HubTagsSection() {
 
   return (
     <div className="settings-section">
+      <p className="muted" style={{ marginBottom: 12, padding: "8px 12px", background: "var(--color-bg-secondary, #f0f0f0)", borderRadius: 6, fontSize: "0.875rem" }}>
+        <strong>Coming soon:</strong> A public hub directory is in development. Tags set here will be used for discovery once the directory launches.
+      </p>
       <label className="settings-label">Self-tags</label>
       <p className="muted">
         Free-form discovery keywords visible on the directory. Max {MAX_TAGS}. Reserved words (verified, certified, official, partner) are not allowed.

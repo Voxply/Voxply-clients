@@ -6,6 +6,14 @@ import { FocusTrap } from "./FocusTrap";
 
 type Visibility = "public" | "private";
 
+function friendlyJoinError(raw: string): string {
+  if (raw.includes("No active session") || raw.includes("timed out") || raw.includes("Connection refused") || raw.includes("error sending request")) return "Could not reach that hub. Check the URL and try again.";
+  if (raw.includes("401") || raw.includes("403") || raw.includes("Unauthorized") || raw.includes("Forbidden")) return "This hub requires an invitation or does not allow public joining.";
+  if (raw.includes("already") || raw.includes("duplicate")) return "You are already connected to this hub.";
+  if (raw.includes("404") || raw.includes("Not Found")) return "No hub found at that URL.";
+  return "Could not join hub: " + raw;
+}
+
 interface KnownFarm {
   url: string;
   name: string;
@@ -233,7 +241,7 @@ export function CreateHubWizard({ knownFarms, onHubCreated, onClose }: Props) {
       setStep(3);
       onHubCreated(newHub);
     } catch (e) {
-      setSubmitError(String(e));
+      setSubmitError(friendlyJoinError(String(e)));
     } finally {
       setSubmitting(false);
     }
