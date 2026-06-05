@@ -677,6 +677,60 @@ fn save_blocked_users(blocked: Vec<String>) -> Result<(), String> {
     Ok(())
 }
 
+fn ignored_users_path() -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("No home directory")?;
+    Ok(home.join(".voxply").join("ignored_users.json"))
+}
+
+#[tauri::command]
+fn load_ignored_users() -> Result<Vec<String>, String> {
+    let path = ignored_users_path()?;
+    if !path.exists() {
+        return Ok(Vec::new());
+    }
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("read: {e}"))?;
+    serde_json::from_str(&text).map_err(|e| format!("parse: {e}"))
+}
+
+#[tauri::command]
+fn save_ignored_users(ignored: Vec<String>) -> Result<(), String> {
+    let path = ignored_users_path()?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("mkdir: {e}"))?;
+    }
+    let text = serde_json::to_string(&ignored).map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| format!("write: {e}"))?;
+    Ok(())
+}
+
+fn dnd_settings_path() -> Result<std::path::PathBuf, String> {
+    let home = dirs::home_dir().ok_or("No home directory")?;
+    Ok(home.join(".voxply").join("dnd_settings.json"))
+}
+
+#[tauri::command]
+fn load_dnd_settings() -> Result<bool, String> {
+    let path = dnd_settings_path()?;
+    if !path.exists() {
+        return Ok(false);
+    }
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("read: {e}"))?;
+    let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("parse: {e}"))?;
+    Ok(v.get("active").and_then(|a| a.as_bool()).unwrap_or(false))
+}
+
+#[tauri::command]
+fn save_dnd_settings(active: bool) -> Result<(), String> {
+    let path = dnd_settings_path()?;
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).map_err(|e| format!("mkdir: {e}"))?;
+    }
+    let text = serde_json::to_string(&serde_json::json!({ "active": active }))
+        .map_err(|e| e.to_string())?;
+    std::fs::write(&path, text).map_err(|e| format!("write: {e}"))?;
+    Ok(())
+}
+
 #[tauri::command]
 fn load_collapsed_categories() -> Result<serde_json::Value, String> {
     let path = collapsed_categories_path()?;
@@ -2205,6 +2259,182 @@ async fn delete_message(
 }
 
 #[tauri::command]
+async fn forum_list_posts(
+    channel_id: String,
+    cursor: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let mut req = state
+        .http_client
+        .get(format!("{hub_url}/channels/{channel_id}/posts"))
+        .bearer_auth(&token);
+    if let Some(c) = cursor {
+        req = req.query(&[("cursor", c)]);
+    }
+    let resp = req.send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forum_get_post(
+    channel_id: String,
+    post_id: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let resp = state
+        .http_client
+        .get(format!("{hub_url}/channels/{channel_id}/posts/{post_id}"))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forum_create_post(
+    channel_id: String,
+    title: String,
+    body: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let resp = state
+        .http_client
+        .post(format!("{hub_url}/channels/{channel_id}/posts"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "title": title, "body": body }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forum_create_reply(
+    channel_id: String,
+    post_id: String,
+    body: String,
+    reply_to_id: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let resp = state
+        .http_client
+        .post(format!(
+            "{hub_url}/channels/{channel_id}/posts/{post_id}/replies"
+        ))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "body": body, "reply_to_id": reply_to_id }))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forum_get_post_replies(
+    channel_id: String,
+    post_id: String,
+    cursor: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let (hub_url, token) = active_session(&state)?;
+    let mut req = state
+        .http_client
+        .get(format!(
+            "{hub_url}/channels/{channel_id}/posts/{post_id}/replies"
+        ))
+        .bearer_auth(&token);
+    if let Some(c) = cursor {
+        req = req.query(&[("cursor", c)]);
+    }
+    let resp = req.send().await.map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+async fn forum_pin_post(
+    channel_id: String,
+    post_id: String,
+    pin: bool,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_session(&state)?;
+    let url = format!("{hub_url}/channels/{channel_id}/posts/{post_id}/pin");
+    let resp = if pin {
+        state
+            .http_client
+            .post(&url)
+            .bearer_auth(&token)
+            .body("")
+            .send()
+            .await
+    } else {
+        state
+            .http_client
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+    }
+    .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+async fn forum_lock_post(
+    channel_id: String,
+    post_id: String,
+    lock: bool,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_session(&state)?;
+    let url = format!("{hub_url}/channels/{channel_id}/posts/{post_id}/lock");
+    let resp = if lock {
+        state
+            .http_client
+            .post(&url)
+            .bearer_auth(&token)
+            .body("")
+            .send()
+            .await
+    } else {
+        state
+            .http_client
+            .delete(&url)
+            .bearer_auth(&token)
+            .send()
+            .await
+    }
+    .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn subscribe_channel(channel_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let tx = active_ws_tx(&state)?;
     tx.send(WsCommand::Subscribe(channel_id))
@@ -2905,6 +3135,11 @@ fn get_my_public_key() -> Result<String, String> {
     let path = Identity::default_path().map_err(|e| e.to_string())?;
     let (identity, _) = Identity::load_or_create(&path).map_err(|e| e.to_string())?;
     Ok(identity.public_key_hex())
+}
+
+#[tauri::command]
+fn get_my_pubkey() -> Result<String, String> {
+    get_my_public_key()
 }
 
 #[tauri::command]
@@ -7254,6 +7489,13 @@ pub fn run() {
             send_message,
             edit_message,
             delete_message,
+            forum_list_posts,
+            forum_get_post,
+            forum_create_post,
+            forum_create_reply,
+            forum_get_post_replies,
+            forum_pin_post,
+            forum_lock_post,
             subscribe_channel,
             unsubscribe_channel,
             set_typing,
@@ -7282,6 +7524,7 @@ pub fn run() {
             get_recovery_phrase,
             recover_identity_from_phrase,
             get_my_public_key,
+            get_my_pubkey,
             sign_message,
             get_me,
             get_hub_branding,
@@ -7319,6 +7562,10 @@ pub fn run() {
             save_collapsed_categories,
             load_blocked_users,
             save_blocked_users,
+            load_ignored_users,
+            save_ignored_users,
+            load_dnd_settings,
+            save_dnd_settings,
             get_talk_power,
             set_talk_power_cmd,
             assign_role,
