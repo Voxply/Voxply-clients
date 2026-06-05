@@ -53,10 +53,10 @@ export function HubCertificationsAdminSection({ hubUrl }: Props) {
     }
   }
 
-  async function handleRevoke(id: string) {
+  async function handleRevoke(subjectPubkey: string) {
     try {
-      await invoke("revoke_cert", { hubUrl, certId: id });
-      setIssued((prev) => prev.map((c) => c.id === id ? { ...c, standing: "revoked" as const } : c));
+      await invoke("revoke_cert", { hubUrl, subjectPubkey });
+      setIssued((prev) => prev.map((c) => c.subject_pubkey === subjectPubkey ? { ...c, standing: "revoked" as const } : c));
     } catch {
       // noop
     }
@@ -199,7 +199,7 @@ export function HubCertificationsAdminSection({ hubUrl }: Props) {
               {c.standing === "revoked" && <span className="muted" style={{ marginLeft: 8, color: "var(--color-error, red)" }}>revoked</span>}
             </div>
             {c.standing !== "revoked" && (
-              <button className="btn-secondary" onClick={() => handleRevoke(c.id)}>Revoke</button>
+              <button className="btn-secondary" onClick={() => handleRevoke(c.subject_pubkey)}>Revoke</button>
             )}
           </div>
         ))}
