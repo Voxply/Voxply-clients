@@ -86,10 +86,11 @@ export function IdentityBackupSection() {
           with both can take over your identity.
         </p>
         <div style={{ marginTop: 8 }}>
-          <label className="settings-label" style={{ fontSize: "var(--text-sm)" }}>
+          <label className="settings-label" htmlFor="export-passphrase" style={{ fontSize: "var(--text-sm)" }}>
             Passphrase
           </label>
           <input
+            id="export-passphrase"
             type="password"
             value={exportPass}
             onChange={(e) => setExportPass(e.target.value)}
@@ -111,10 +112,11 @@ export function IdentityBackupSection() {
               )}
             </div>
           )}
-          <label className="settings-label" style={{ fontSize: "var(--text-sm)" }}>
+          <label className="settings-label" htmlFor="export-passphrase-confirm" style={{ fontSize: "var(--text-sm)" }}>
             Confirm passphrase
           </label>
           <input
+            id="export-passphrase-confirm"
             type="password"
             value={exportConfirm}
             onChange={(e) => setExportConfirm(e.target.value)}
@@ -151,20 +153,22 @@ export function IdentityBackupSection() {
           your current identity.
         </p>
         <div style={{ marginTop: 8 }}>
-          <label className="settings-label" style={{ fontSize: "var(--text-sm)" }}>
+          <label className="settings-label" htmlFor="import-backup-path" style={{ fontSize: "var(--text-sm)" }}>
             Backup file path
           </label>
           <input
+            id="import-backup-path"
             type="text"
             value={importPath}
             onChange={(e) => setImportPath(e.target.value)}
             placeholder="/home/you/.voxply/identity-backup-....voxback"
             style={{ marginBottom: 4 }}
           />
-          <label className="settings-label" style={{ fontSize: "var(--text-sm)" }}>
+          <label className="settings-label" htmlFor="import-passphrase" style={{ fontSize: "var(--text-sm)" }}>
             Passphrase
           </label>
           <input
+            id="import-passphrase"
             type="password"
             value={importPass}
             onChange={(e) => setImportPass(e.target.value)}
