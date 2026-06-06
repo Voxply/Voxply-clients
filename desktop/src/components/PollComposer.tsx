@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 interface Props {
@@ -10,13 +10,18 @@ interface Props {
 
 export function PollComposer({ hubUrl, channelId, onCreated, onClose }: Props) {
   const [question, setQuestion] = useState("");
-  const [options, setOptions] = useState(["", ""]);
+  const nextId = useRef(2);
+  const [options, setOptions] = useState<{ id: number; value: string }[]>(() => [
+    { id: 0, value: "" },
+    { id: 1, value: "" },
+  ]);
   const [closesAt, setClosesAt] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   function addOption() {
-    setOptions((prev) => [...prev, ""]);
+    const id = nextId.current++;
+    setOptions((prev) => [...prev, { id, value: "" }]);
   }
 
   function removeOption(i: number) {
@@ -25,12 +30,12 @@ export function PollComposer({ hubUrl, channelId, onCreated, onClose }: Props) {
   }
 
   function updateOption(i: number, value: string) {
-    setOptions((prev) => prev.map((o, idx) => (idx === i ? value : o)));
+    setOptions((prev) => prev.map((o, idx) => (idx === i ? { ...o, value } : o)));
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    const filled = options.filter((o) => o.trim().length > 0);
+    const filled = options.filter((o) => o.value.trim().length > 0).map((o) => o.value);
     if (!question.trim() || filled.length < 2) {
       setError("A question and at least 2 options are required.");
       return;
@@ -87,11 +92,11 @@ export function PollComposer({ hubUrl, channelId, onCreated, onClose }: Props) {
           <div>
             <div className="settings-label">Options</div>
             {options.map((opt, i) => (
-              <div key={i} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
+              <div key={opt.id} style={{ display: "flex", gap: 6, marginBottom: 4 }}>
                 <input
                   className="settings-input"
                   type="text"
-                  value={opt}
+                  value={opt.value}
                   onChange={(e) => updateOption(i, e.target.value)}
                   placeholder={`Option ${i + 1}`}
                   style={{ flex: 1 }}
