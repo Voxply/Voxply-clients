@@ -14,7 +14,9 @@ import type {
   VoiceParticipant,
   InstalledGame,
   PostSummary,
+  LinkPreview,
 } from "../types";
+import { LinkPreviewCard } from "./LinkPreviewCard";
 import { GamePicker } from "./GamePicker";
 import { GameModal } from "./GameModal";
 import { GamepadIcon } from "./Icons";
@@ -69,6 +71,32 @@ function IgnoredMessagePlaceholder() {
       )}
     </li>
   );
+}
+
+const URL_RE = /https?:\/\/\S+/;
+
+function MessageLinkPreview({
+  content,
+  activeHubUrl,
+}: {
+  content: string;
+  activeHubUrl: string;
+}) {
+  const [preview, setPreview] = React.useState<LinkPreview | null>(null);
+  const fetchedRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (fetchedRef.current || !activeHubUrl) return;
+    const m = URL_RE.exec(content);
+    if (!m) return;
+    fetchedRef.current = true;
+    invoke<LinkPreview>("fetch_link_preview", { hubUrl: activeHubUrl, url: m[0] })
+      .then(setPreview)
+      .catch(() => {});
+  }, [content, activeHubUrl]);
+
+  if (!preview) return null;
+  return <LinkPreviewCard preview={preview} />;
 }
 
 interface TypingEntry { name: string; ts: number }
@@ -192,6 +220,9 @@ export function ContentArea({
   const { t } = useTranslation();
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
+  const [mentionSuggestions, setMentionSuggestions] = useState<User[]>([]);
+  const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
+  const [mentionAnchor, setMentionAnchor] = useState<number>(-1);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
   const [profileCard, setProfileCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
   const [showPinned, setShowPinned] = useState(false);
@@ -356,9 +387,40 @@ export function ContentArea({
       );
       setSlashSuggestions(matches);
       setSlashSelectedIdx(0);
-    } else {
-      setSlashSuggestions([]);
+      setMentionSuggestions([]);
+      setMentionAnchor(-1);
+      return;
     }
+    setSlashSuggestions([]);
+
+    const atIdx = value.lastIndexOf("@");
+    if (atIdx >= 0) {
+      const tail = value.slice(atIdx + 1);
+      if (!tail.includes(" ")) {
+        const lower = tail.toLowerCase();
+        const matches = users
+          .filter((u) => u.display_name && u.display_name.toLowerCase().startsWith(lower))
+          .slice(0, 8);
+        if (matches.length > 0) {
+          setMentionSuggestions(matches);
+          setMentionSelectedIdx(0);
+          setMentionAnchor(atIdx);
+          return;
+        }
+      }
+    }
+    setMentionSuggestions([]);
+    setMentionAnchor(-1);
+  }
+
+  function fillMention(user: User) {
+    if (mentionAnchor < 0 || !user.display_name) return;
+    const before = inputText.slice(0, mentionAnchor);
+    const after = inputText.slice(mentionAnchor + 1 + (inputText.slice(mentionAnchor + 1).split(" ")[0].length));
+    onInputTextChange(`${before}@${user.display_name} ${after}`);
+    setMentionSuggestions([]);
+    setMentionAnchor(-1);
+    setMentionSelectedIdx(0);
   }
 
   function fillSlashCommand(command: string) {
@@ -386,6 +448,28 @@ export function ContentArea({
   }
 
   function handleSlashKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (mentionSuggestions.length > 0) {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        setMentionSelectedIdx((i) => (i + 1) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === "ArrowUp") {
+        e.preventDefault();
+        setMentionSelectedIdx((i) => (i - 1 + mentionSuggestions.length) % mentionSuggestions.length);
+        return;
+      }
+      if (e.key === "Tab" || e.key === "Enter") {
+        e.preventDefault();
+        fillMention(mentionSuggestions[mentionSelectedIdx]);
+        return;
+      }
+      if (e.key === "Escape") {
+        setMentionSuggestions([]);
+        setMentionAnchor(-1);
+        return;
+      }
+    }
     if (slashSuggestions.length > 0) {
       if (e.key === "ArrowDown") {
         e.preventDefault();
@@ -882,6 +966,9 @@ export function ContentArea({
                             <span className="message-content">
                               <MessageContent content={m.content} knownNames={knownDisplayNames} myName={myDisplayName} hubEmojiMap={hubEmojiMap} hubBaseUrl={activeHub?.hub_url} />
                             </span>
+                            {activeHub && URL_RE.test(m.content) && (
+                              <MessageLinkPreview content={m.content} activeHubUrl={activeHub.hub_url} />
+                            )}
                             {m.attachments && m.attachments.length > 0 && (
                               <MessageAttachments items={m.attachments} onImageClick={onOpenImage} />
                             )}
@@ -1096,6 +1183,19 @@ export function ContentArea({
                         <span className="slash-command-name">/{s.command}</span>
                         <span className="slash-command-desc">{s.description}</span>
                         <span className="slash-command-bot">{s.bot_name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {mentionSuggestions.length > 0 && (
+                  <div className="slash-command-popup mention-popup">
+                    {mentionSuggestions.map((u, i) => (
+                      <div
+                        key={u.public_key}
+                        className={`slash-command-item${i === mentionSelectedIdx ? " selected" : ""}`}
+                        onMouseDown={(e) => { e.preventDefault(); fillMention(u); }}
+                      >
+                        <span className="slash-command-name">@{u.display_name}</span>
                       </div>
                     ))}
                   </div>

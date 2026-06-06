@@ -16,6 +16,51 @@ mod identity;
 mod pairing;
 mod prefs_blob;
 
+// --- Typed command errors ---
+
+#[derive(Debug, serde::Serialize)]
+#[serde(tag = "code", content = "message")]
+pub enum AppError {
+    NotFound(String),
+    Forbidden(String),
+    RateLimit(String),
+    Network(String),
+    Internal(String),
+}
+
+impl std::fmt::Display for AppError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            AppError::NotFound(m) => write!(f, "NotFound: {m}"),
+            AppError::Forbidden(m) => write!(f, "Forbidden: {m}"),
+            AppError::RateLimit(m) => write!(f, "RateLimit: {m}"),
+            AppError::Network(m) => write!(f, "Network: {m}"),
+            AppError::Internal(m) => write!(f, "Internal: {m}"),
+        }
+    }
+}
+
+impl From<reqwest::Error> for AppError {
+    fn from(e: reqwest::Error) -> Self {
+        AppError::Network(e.to_string())
+    }
+}
+
+impl From<String> for AppError {
+    fn from(s: String) -> Self {
+        AppError::Internal(s)
+    }
+}
+
+fn map_http_status(status: reqwest::StatusCode, body: String) -> AppError {
+    match status.as_u16() {
+        404 => AppError::NotFound(body),
+        403 => AppError::Forbidden(body),
+        429 => AppError::RateLimit(body),
+        _ => AppError::Internal(body),
+    }
+}
+
 // --- Shared state ---
 
 struct AppState {
@@ -1979,19 +2024,20 @@ async fn reauth_session(
 async fn get_messages(
     channel_id: String,
     state: State<'_, AppState>,
-) -> Result<Vec<MessageInfo>, String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<Vec<MessageInfo>, AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
-    let mut messages: Vec<MessageInfo> = client
+    let resp = client
         .get(format!("{hub_url}/channels/{channel_id}/messages"))
         .bearer_auth(&token)
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?
-        .json()
-        .await
-        .map_err(|e| format!("Invalid: {e}"))?;
-
+        .await?;
+    if !resp.status().is_success() {
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
+    }
+    let mut messages: Vec<MessageInfo> = resp.json().await.map_err(|e| AppError::Internal(e.to_string()))?;
     messages.reverse();
     Ok(messages)
 }
@@ -2023,8 +2069,8 @@ async fn add_reaction(
     message_id: String,
     emoji: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<(), AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
     let resp = client
         .post(format!(
@@ -2033,10 +2079,11 @@ async fn add_reaction(
         .bearer_auth(&token)
         .json(&serde_json::json!({ "emoji": emoji }))
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?;
+        .await?;
     if !resp.status().is_success() {
-        return Err(resp.text().await.unwrap_or_default());
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
     }
     Ok(())
 }
@@ -2047,11 +2094,9 @@ async fn remove_reaction(
     message_id: String,
     emoji: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<(), AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
-    // URL-encoding emoji is important since some are multi-byte and can
-    // include reserved chars (variation selectors, etc.).
     let encoded = urlencoding_emoji(&emoji);
     let resp = client
         .delete(format!(
@@ -2059,10 +2104,11 @@ async fn remove_reaction(
         ))
         .bearer_auth(&token)
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?;
+        .await?;
     if !resp.status().is_success() {
-        return Err(resp.text().await.unwrap_or_default());
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
     }
     Ok(())
 }
@@ -2195,8 +2241,8 @@ async fn send_message(
     attachments: Option<Vec<AttachmentInfo>>,
     reply_to: Option<String>,
     state: State<'_, AppState>,
-) -> Result<MessageInfo, String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<MessageInfo, AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
     let body = serde_json::json!({
         "content": content,
@@ -2208,12 +2254,13 @@ async fn send_message(
         .bearer_auth(&token)
         .json(&body)
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?;
+        .await?;
     if !resp.status().is_success() {
-        return Err(resp.text().await.unwrap_or_default());
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
     }
-    resp.json().await.map_err(|e| format!("Invalid: {e}"))
+    resp.json().await.map_err(|e| AppError::Internal(e.to_string()))
 }
 
 #[tauri::command]
@@ -2222,20 +2269,21 @@ async fn edit_message(
     message_id: String,
     content: String,
     state: State<'_, AppState>,
-) -> Result<MessageInfo, String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<MessageInfo, AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
     let resp = client
         .patch(format!("{hub_url}/channels/{channel_id}/messages/{message_id}"))
         .bearer_auth(&token)
         .json(&serde_json::json!({ "content": content }))
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?;
+        .await?;
     if !resp.status().is_success() {
-        return Err(resp.text().await.unwrap_or_default());
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
     }
-    resp.json().await.map_err(|e| format!("Invalid: {e}"))
+    resp.json().await.map_err(|e| AppError::Internal(e.to_string()))
 }
 
 #[tauri::command]
@@ -2243,17 +2291,18 @@ async fn delete_message(
     channel_id: String,
     message_id: String,
     state: State<'_, AppState>,
-) -> Result<(), String> {
-    let (hub_url, token) = active_session(&state)?;
+) -> Result<(), AppError> {
+    let (hub_url, token) = active_session(&state).map_err(AppError::Internal)?;
     let client = state.http_client.clone();
     let resp = client
         .delete(format!("{hub_url}/channels/{channel_id}/messages/{message_id}"))
         .bearer_auth(&token)
         .send()
-        .await
-        .map_err(|e| format!("Failed: {e}"))?;
+        .await?;
     if !resp.status().is_success() {
-        return Err(resp.text().await.unwrap_or_default());
+        let status = resp.status();
+        let body = resp.text().await.unwrap_or_default();
+        return Err(map_http_status(status, body));
     }
     Ok(())
 }
@@ -8169,6 +8218,37 @@ async fn set_discovery_tags(tags: Vec<String>, nsfw: bool, state: State<'_, AppS
     Ok(())
 }
 
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct LinkPreviewInfo {
+    url: String,
+    title: Option<String>,
+    description: Option<String>,
+    image_url: Option<String>,
+}
+
+#[tauri::command]
+async fn fetch_link_preview(
+    hub_url: String,
+    url: String,
+    state: State<'_, AppState>,
+) -> Result<LinkPreviewInfo, String> {
+    let token = session_for_url(&state, &hub_url)?;
+    let encoded = urlencoding_emoji(&url);
+    let resp = state
+        .http_client
+        .get(format!("{}/preview?url={}", hub_url.trim_end_matches('/'), encoded))
+        .bearer_auth(&token)
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(format!("HTTP {}", resp.status()));
+    }
+    resp.json::<LinkPreviewInfo>()
+        .await
+        .map_err(|e| e.to_string())
+}
+
 #[tauri::command]
 async fn set_hub_listed(hub_url: String, listed: bool, state: State<'_, AppState>) -> Result<(), String> {
     let token = session_for_url(&state, &hub_url)?;
@@ -8557,6 +8637,7 @@ pub fn run() {
             create_event_hub,
             get_notification_prefs,
             set_notification_pref,
+            fetch_link_preview,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

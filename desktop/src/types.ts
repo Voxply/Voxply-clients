@@ -956,6 +956,22 @@ export interface Poll {
   creator_pubkey?: string;
 }
 
+// ---- Link preview ----
+
+export interface LinkPreview {
+  url: string;
+  title?: string;
+  description?: string;
+  image_url?: string;
+}
+
+// ---- Typed Tauri errors ----
+
+export type AppError = {
+  code: "NotFound" | "Forbidden" | "RateLimit" | "Network" | "Internal";
+  message: string;
+};
+
 // ---- Hub events ----
 
 export interface HubEvent {

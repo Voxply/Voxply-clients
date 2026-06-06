@@ -54,7 +54,10 @@ import { playMentionPing } from "./utils/audio";
 import { readFileAsB64 } from "./utils/files";
 import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import { buildChannelTree, flattenTree, descendantIds, computeDepth } from "./utils/channels";
-import { useReconnectBackoff } from "./hooks/useReconnectBackoff";
+import { useNotificationPrefs } from "./hooks/useNotificationPrefs";
+import { useUnreadCounts } from "./hooks/useUnreadCounts";
+import { useTypingIndicators } from "./hooks/useTypingIndicators";
+import { useHubConnections } from "./hooks/useHubConnections";
 import { Lightbox } from "./components/Lightbox";
 import { ChannelPalette } from "./components/ChannelPalette";
 import { ChannelBansModal } from "./components/ChannelBansModal";
@@ -117,31 +120,25 @@ function App() {
   >({ state: "idle" });
   const [hubUrl, setHubUrl] = useState("");
   const [inviteCode, setInviteCode] = useState("");
-  // Per-channel unread tracking: hub_id -> { channel_id: true }. Persisted
-  // across restarts via Tauri so dots survive the app being closed. Derived
-  // counts (per hub, total) drive the badges and tray tooltip.
-  const [unreadByChannel, setUnreadByChannel] = useState<
-    Record<string, Record<string, boolean>>
-  >({});
+  const {
+    unreadByChannel,
+    unreadByHub,
+    bumpUnread,
+    clearUnread,
+    clearHubUnread,
+  } = useUnreadCounts();
 
   // Conversation unread set. In-memory only -- DMs always come back to view
   // through the conversation list, so persisting per-launch isn't worth the
   // complexity yet.
   const [unreadDms, setUnreadDms] = useState<Record<string, boolean>>({});
 
-  // Notification mode per scope.
-  // - "all": notify on every message (default; entries omitted from state)
-  // - "mentions": only notify when the current user is @-mentioned
-  // - "silent": no notifications at all
-  // Channel-level overrides hub-level; hub-level overrides the "all" default.
-  // Persisted shape keeps the old map keys (hubs, channels) for back-compat:
-  // the old binary `true` is interpreted as "silent" on load.
-  const [hubNotifyMode, setHubNotifyMode] = useState<Record<string, NotifyMode>>(
-    {},
-  );
-  const [channelNotifyMode, setChannelNotifyMode] = useState<
-    Record<string, Record<string, NotifyMode>>
-  >({});
+  const {
+    hubNotifyMode,
+    channelNotifyMode,
+    setHubMode,
+    setChannelMode,
+  } = useNotificationPrefs();
 
   // Blocked users: pubkey set. Persisted to ~/.voxply/blocked_users.json so
   // the choice carries across sessions. Used to filter out their messages
@@ -210,31 +207,18 @@ function App() {
     });
   }
 
-  // WS connection status per hub. Missing key means connected (default
-  // optimistic so the very first render doesn't flash a banner).
-  const [hubConnected, setHubConnected] = useState<Record<string, boolean>>({});
-
   const {
+    hubConnected,
     reconnectingHubs,
+    setHubConnected,
     scheduleReconnect,
     clearReconnectTimer,
     setReconnecting,
     resetAttempts,
-    onReconnected: onHubReconnected,
+    onHubReconnected,
     onHubRemoved: onHubRemovedReconnect,
-    cancelAll: cancelAllReconnectTimers,
-  } = useReconnectBackoff(async (hubId) => {
-    await invoke("reconnect_hub", { hubId });
-  });
-
-  function persistNotifyModes(
-    hubs: typeof hubNotifyMode,
-    channels: typeof channelNotifyMode,
-  ) {
-    invoke("save_notification_mutes", {
-      state: { hubs, channels },
-    }).catch(() => {});
-  }
+    cancelAllReconnectTimers,
+  } = useHubConnections();
 
   function effectiveNotifyMode(hubId: string, channelId: string): NotifyMode {
     let id: string | null = channelId;
@@ -247,118 +231,7 @@ function App() {
     return hubNotifyMode[hubId] ?? "all";
   }
 
-  function setHubMode(hubId: string, mode: NotifyMode) {
-    setHubNotifyMode((prev) => {
-      const next = { ...prev };
-      if (mode === "all") delete next[hubId];
-      else next[hubId] = mode;
-      persistNotifyModes(next, channelNotifyMode);
-      return next;
-    });
-  }
 
-  function setChannelMode(hubId: string, channelId: string, mode: NotifyMode) {
-    setChannelNotifyMode((prev) => {
-      const hubMap = { ...(prev[hubId] ?? {}) };
-      if (mode === "all") delete hubMap[channelId];
-      else hubMap[channelId] = mode;
-      const next = { ...prev, [hubId]: hubMap };
-      persistNotifyModes(hubNotifyMode, next);
-      return next;
-    });
-  }
-
-  function bumpUnread(hubId: string, channelId: string) {
-    setUnreadByChannel((prev) => {
-      const hubMap = prev[hubId] ?? {};
-      if (hubMap[channelId]) return prev; // already marked
-      const next = {
-        ...prev,
-        [hubId]: { ...hubMap, [channelId]: true as boolean },
-      };
-      invoke("save_unread_state", { state: next }).catch(() => {});
-      return next;
-    });
-  }
-
-  function clearUnread(hubId: string, channelId: string) {
-    setUnreadByChannel((prev) => {
-      const hubMap = prev[hubId];
-      if (!hubMap || !hubMap[channelId]) return prev;
-      const { [channelId]: _, ...rest } = hubMap;
-      const next = { ...prev, [hubId]: rest };
-      invoke("save_unread_state", { state: next }).catch(() => {});
-      return next;
-    });
-  }
-
-  function clearHubUnread(hubId: string) {
-    setUnreadByChannel((prev) => {
-      if (!prev[hubId] || Object.keys(prev[hubId]).length === 0) return prev;
-      const next = { ...prev, [hubId]: {} };
-      invoke("save_unread_state", { state: next }).catch(() => {});
-      return next;
-    });
-  }
-
-  const unreadByHub: Record<string, number> = useMemo(() => {
-    const out: Record<string, number> = {};
-    for (const [hub, m] of Object.entries(unreadByChannel)) {
-      out[hub] = Object.keys(m).length;
-    }
-    return out;
-  }, [unreadByChannel]);
-
-  // Push the aggregated unread count into the system tray tooltip AND the
-  // window title whenever it changes. The title is what taskbars/docks show,
-  // so the "(N) Voxply" prefix flags attention even when the window isn't
-  // foregrounded.
-  useEffect(() => {
-    const total = Object.values(unreadByHub).reduce((n, v) => n + v, 0);
-    invoke("set_tray_unread", { count: total }).catch(() => {});
-    document.title = total > 0 ? `(${total > 99 ? "99+" : total}) Voxply` : "Voxply";
-  }, [unreadByHub]);
-
-  // Hydrate persisted unread state on launch.
-  useEffect(() => {
-    invoke<Record<string, Record<string, boolean>>>("load_unread_state")
-      .then((s) => setUnreadByChannel(s ?? {}))
-      .catch(console.error);
-  }, []);
-
-  // Hydrate persisted notification modes on launch. Old persisted shape
-  // used `true` for muted; we normalize that to "silent" so older configs
-  // still work.
-  useEffect(() => {
-    function normalizeMode(v: unknown): NotifyMode | undefined {
-      if (v === true) return "silent";
-      if (v === "silent" || v === "mentions" || v === "all") return v;
-      return undefined;
-    }
-    invoke<{
-      hubs?: Record<string, unknown>;
-      channels?: Record<string, Record<string, unknown>>;
-    }>("load_notification_mutes")
-      .then((s) => {
-        const hubMap: Record<string, NotifyMode> = {};
-        for (const [k, v] of Object.entries(s?.hubs ?? {})) {
-          const m = normalizeMode(v);
-          if (m && m !== "all") hubMap[k] = m;
-        }
-        const chanMap: Record<string, Record<string, NotifyMode>> = {};
-        for (const [hubId, inner] of Object.entries(s?.channels ?? {})) {
-          const sub: Record<string, NotifyMode> = {};
-          for (const [chId, v] of Object.entries(inner ?? {})) {
-            const m = normalizeMode(v);
-            if (m && m !== "all") sub[chId] = m;
-          }
-          if (Object.keys(sub).length > 0) chanMap[hubId] = sub;
-        }
-        setHubNotifyMode(hubMap);
-        setChannelNotifyMode(chanMap);
-      })
-      .catch(console.error);
-  }, []);
 
   // Hydrate collapsed-category state on launch.
   useEffect(() => {
@@ -383,73 +256,6 @@ function App() {
   }, []);
 
 
-  // Sweep typing entries older than 5s every second. Saves us from showing
-  // a stale "X is typing..." if their typing:false event got lost.
-  // Same sweep covers both channel and DM typing maps.
-  useEffect(() => {
-    const handle = setInterval(() => {
-      const cutoff = Date.now() - 5000;
-      function trim<T extends { ts: number }>(prev: Record<string, T>) {
-        let changed = false;
-        const next: Record<string, T> = {};
-        for (const [k, v] of Object.entries(prev)) {
-          if (v.ts >= cutoff) next[k] = v;
-          else changed = true;
-        }
-        return changed ? next : prev;
-      }
-      setTypingByKey(trim);
-      setDmTypingByKey(trim);
-    }, 1000);
-    return () => clearInterval(handle);
-  }, []);
-
-  /**
-   * Notify the hub the user is typing. We rate-limit to one "typing:true"
-   * every 3s and a single trailing "typing:false" 4s after the last
-   * keystroke -- enough cadence to keep the indicator alive but cheap on
-   * the wire.
-   */
-  function pingTyping() {
-    if (!selectedChannel) return;
-    const now = Date.now();
-    if (now - lastTypingSentRef.current > 3000) {
-      lastTypingSentRef.current = now;
-      invoke("set_typing", { channelId: selectedChannel.id, typing: true }).catch(
-        () => {}
-      );
-    }
-    if (typingDebounceRef.current) clearTimeout(typingDebounceRef.current);
-    typingDebounceRef.current = setTimeout(() => {
-      if (selectedChannel) {
-        invoke("set_typing", {
-          channelId: selectedChannel.id,
-          typing: false,
-        }).catch(() => {});
-      }
-      lastTypingSentRef.current = 0;
-    }, 4000);
-  }
-
-  /** Same shape as pingTyping but routed through the DM broadcast. */
-  function pingDmTyping() {
-    if (!selectedConversation) return;
-    const convId = selectedConversation.id;
-    const now = Date.now();
-    if (now - lastDmTypingSentRef.current > 3000) {
-      lastDmTypingSentRef.current = now;
-      invoke("set_dm_typing", { conversationId: convId, typing: true }).catch(
-        () => {},
-      );
-    }
-    if (dmTypingDebounceRef.current) clearTimeout(dmTypingDebounceRef.current);
-    dmTypingDebounceRef.current = setTimeout(() => {
-      invoke("set_dm_typing", { conversationId: convId, typing: false }).catch(
-        () => {},
-      );
-      lastDmTypingSentRef.current = 0;
-    }, 4000);
-  }
   const [pingByHub, setPingByHub] = useState<Record<string, number | null>>({});
 
   const [publicKey, setPublicKey] = useState<string | null>(null);
@@ -521,20 +327,22 @@ function App() {
   // Message we're currently replying to. Null means a top-level message.
   const [replyTarget, setReplyTarget] = useState<Message | null>(null);
 
-  // Who's currently typing in the active channel: pubkey -> {name, timestamp}.
-  // Entries auto-expire after 5s of no updates so a stuck "typing…" can't
-  // hang around if the typer disconnects without sending typing:false.
-  const [typingByKey, setTypingByKey] = useState<
-    Record<string, { name: string; ts: number }>
-  >({});
-  const typingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastTypingSentRef = useRef<number>(0);
-  // Same shape but for the active DM conversation.
-  const [dmTypingByKey, setDmTypingByKey] = useState<
-    Record<string, { name: string; ts: number }>
-  >({});
-  const dmTypingDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastDmTypingSentRef = useRef<number>(0);
+  const selectedChannelForTypingRef = useRef<Channel | null>(null);
+  useEffect(() => { selectedChannelForTypingRef.current = selectedChannel; }, [selectedChannel]);
+  const selectedConversationForTypingRef = useRef<Conversation | null>(null);
+
+  const {
+    typingByKey,
+    dmTypingByKey,
+    pingTyping,
+    pingDmTyping,
+    setTypingEntry,
+    clearTypingEntry,
+    setDmTypingEntry,
+    clearDmTypingEntry,
+    clearAllTyping,
+    clearAllDmTyping,
+  } = useTypingIndicators(selectedChannelForTypingRef, selectedConversationForTypingRef);
 
   // Per-channel search. When a query is active, the message list is
   // replaced by search results (newest-first) until the user clears it.
@@ -948,6 +756,7 @@ function App() {
 
   useEffect(() => {
     selectedConversationIdRef.current = selectedConversation?.id ?? null;
+    selectedConversationForTypingRef.current = selectedConversation;
   }, [selectedConversation]);
 
   // Ref to the messages container for auto-scroll
@@ -1220,16 +1029,9 @@ function App() {
           const name =
             event.payload.sender_name || formatPubkey(event.payload.sender);
           if (event.payload.typing) {
-            setDmTypingByKey((prev) => ({
-              ...prev,
-              [event.payload.sender]: { name, ts: Date.now() },
-            }));
+            setDmTypingEntry(event.payload.sender, name);
           } else {
-            setDmTypingByKey((prev) => {
-              if (!prev[event.payload.sender]) return prev;
-              const { [event.payload.sender]: _, ...rest } = prev;
-              return rest;
-            });
+            clearDmTypingEntry(event.payload.sender);
           }
         }),
       );
@@ -1249,16 +1051,9 @@ function App() {
             event.payload.display_name ||
             formatPubkey(event.payload.public_key);
           if (event.payload.typing) {
-            setTypingByKey((prev) => ({
-              ...prev,
-              [event.payload.public_key]: { name, ts: Date.now() },
-            }));
+            setTypingEntry(event.payload.public_key, name);
           } else {
-            setTypingByKey((prev) => {
-              if (!prev[event.payload.public_key]) return prev;
-              const { [event.payload.public_key]: _, ...rest } = prev;
-              return rest;
-            });
+            clearTypingEntry(event.payload.public_key);
           }
         })
       );
@@ -2307,7 +2102,7 @@ function App() {
 
     setSelectedChannel(channel);
     setMessages([]);
-    setTypingByKey({});
+    clearAllTyping();
     if (activeHubId) {
       clearUnread(activeHubId, channel.id);
       setInputText(loadDraft(`${activeHubId}/${channel.id}`));
@@ -2715,7 +2510,8 @@ function App() {
 
   async function selectConversation(conv: Conversation) {
     setSelectedConversation(conv);
-    setDmTypingByKey({});
+    selectedConversationForTypingRef.current = conv;
+    clearAllDmTyping();
     setUnreadDms((prev) => {
       if (!prev[conv.id]) return prev;
       const { [conv.id]: _, ...rest } = prev;
@@ -3225,20 +3021,34 @@ function App() {
 
       if (e.altKey && e.key === "ArrowUp") {
         e.preventDefault();
-        if (view === "channels" && selectedChannel) {
-          const visible = channels.filter((c) => !c.is_category);
-          const idx = visible.findIndex((c) => c.id === selectedChannel.id);
-          if (idx > 0) selectChannel(visible[idx - 1]);
+        if (view === "channels" && activeHubId) {
+          const unreadSet = unreadByChannel[activeHubId] ?? {};
+          const unreadChannels = channels.filter((c) => !c.is_category && unreadSet[c.id]);
+          if (unreadChannels.length > 0) {
+            const idx = selectedChannel
+              ? unreadChannels.findIndex((c) => c.id === selectedChannel.id)
+              : -1;
+            const prev = idx > 0 ? unreadChannels[idx - 1] : unreadChannels[unreadChannels.length - 1];
+            selectChannel(prev);
+          }
         }
         return;
       }
 
       if (e.altKey && e.key === "ArrowDown") {
         e.preventDefault();
-        if (view === "channels" && selectedChannel) {
-          const visible = channels.filter((c) => !c.is_category);
-          const idx = visible.findIndex((c) => c.id === selectedChannel.id);
-          if (idx >= 0 && idx < visible.length - 1) selectChannel(visible[idx + 1]);
+        if (view === "channels" && activeHubId) {
+          const unreadSet = unreadByChannel[activeHubId] ?? {};
+          const unreadChannels = channels.filter((c) => !c.is_category && unreadSet[c.id]);
+          if (unreadChannels.length > 0) {
+            const idx = selectedChannel
+              ? unreadChannels.findIndex((c) => c.id === selectedChannel.id)
+              : -1;
+            const next = idx >= 0 && idx < unreadChannels.length - 1
+              ? unreadChannels[idx + 1]
+              : unreadChannels[0];
+            selectChannel(next);
+          }
         }
         return;
       }
@@ -3254,10 +3064,16 @@ function App() {
         messageInputRef.current?.focus();
         return;
       }
+
+      if (e.key === "Escape") {
+        if (contextMenu) { setContextMenu(null); return; }
+        if (paletteOpen) { setPaletteOpen(false); return; }
+        if (replyTarget) { setReplyTarget(null); return; }
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [hubs, activeHubId, selectedChannel, channels, view, voice]);
+  }, [hubs, activeHubId, selectedChannel, channels, view, voice, unreadByChannel, contextMenu, paletteOpen, replyTarget]);
 
   return (
     <div className="app">
