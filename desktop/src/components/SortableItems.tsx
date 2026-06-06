@@ -92,7 +92,7 @@ function VoiceParticipantRow({
             >
               Reset
             </button>
-            <button className="participant-volume-close" onClick={() => setOpen(false)}>✕</button>
+            <button className="participant-volume-close" onClick={() => setOpen(false)} aria-label="Close" title="Close">✕</button>
           </div>
         </div>
       )}

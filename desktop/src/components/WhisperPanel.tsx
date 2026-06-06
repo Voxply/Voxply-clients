@@ -40,7 +40,7 @@ export function WhisperPanel({
     <div className="whisper-panel">
       <div className="whisper-panel-header">
         <span className="whisper-panel-title">Whisper</span>
-        <button className="whisper-panel-close" onClick={onClose}>✕</button>
+        <button className="whisper-panel-close" onClick={onClose} aria-label="Close" title="Close">✕</button>
       </div>
 
       {isWhispering && (
@@ -83,7 +83,7 @@ export function WhisperPanel({
             <span className="whisper-list-targets">{list.targets.map(t => t.label).join(", ")}</span>
             <div className="whisper-list-actions">
               <button onClick={() => { onStartWhisper(list.targets); onClose(); }}>Whisper</button>
-              <button onClick={() => onDeleteList(list.id)}>✕</button>
+              <button onClick={() => onDeleteList(list.id)} aria-label="Delete list" title="Delete list">✕</button>
             </div>
           </div>
         ))}
