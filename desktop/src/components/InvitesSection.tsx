@@ -49,11 +49,13 @@ export function InvitesSection({
             value={maxUsesStr}
             onChange={(e) => setMaxUsesStr(e.target.value)}
             placeholder={t("invites.create.max_uses_placeholder")}
+            aria-label={t("invites.create.max_uses_placeholder")}
             min={1}
           />
           <select
             value={expiryIdx}
             onChange={(e) => setExpiryIdx(Number(e.target.value))}
+            aria-label={t("invites.create.expires_label", { defaultValue: "Expiry" })}
           >
             {EXPIRY_OPTIONS.map((o, i) => (
               <option key={o.label} value={i}>
