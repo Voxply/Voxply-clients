@@ -31,17 +31,17 @@ export function CreateChannelModal({
       <FocusTrap>
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="create-channel-title" onClick={(e) => e.stopPropagation()}>
         <h3 id="create-channel-title">
-          {channelType === "category" ? t("channel.create.title_category") : t("channel.create.title_channel")}
-          {parentId ? t("channel.create.inside_category") : ""}
+          Create…{parentId ? t("channel.create.inside_category") : ""}
         </h3>
+        <p className="modal-section-label">Space type</p>
         <div className="channel-type-row">
           {(["text", "forum", "category", "banner"] as const).map((ty) => (
             <button key={ty} type="button"
               className={`channel-type-btn ${channelType === ty ? "selected" : ""}`}
               onClick={() => onChannelTypeChange(ty)}>
-              {ty === "text" ? t("channel.create.type_channel")
-               : ty === "forum" ? t("channel.create.type_forum")
-               : ty === "category" ? t("channel.create.type_category")
+              {ty === "text" ? "Channel"
+               : ty === "forum" ? "Forum"
+               : ty === "category" ? "Category"
                : "Banner"}
             </button>
           ))}
