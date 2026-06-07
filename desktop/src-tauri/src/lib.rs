@@ -9,6 +9,7 @@ use tokio_tungstenite::tungstenite::Message as WsMessage;
 use crate::identity::Identity;
 use x25519_dalek;
 
+mod admin_signing;
 mod auth_creds;
 mod devices;
 mod home_hub;
@@ -8271,6 +8272,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_deep_link::init())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .setup(|app| {
             app.manage(AppState {
@@ -8299,7 +8301,14 @@ pub fn run() {
                 let _listener_id = app.deep_link().on_open_url(move |event| {
                     for url in event.urls() {
                         let raw = url.as_str();
-                        if raw.starts_with("voxply://") {
+                        if raw.starts_with("voxply://sign-admin") {
+                            let url_str = raw.to_string();
+                            let h = handle.clone();
+                            tauri::async_runtime::spawn(async move {
+                                admin_signing::handle_sign_admin_deep_link(url_str, h).await;
+                            });
+                            break;
+                        } else if raw.starts_with("voxply://") {
                             if let Some(state) = handle.try_state::<PendingDeepLink>() {
                                 *state.url.lock().unwrap() = Some(raw.to_string());
                             }
@@ -8638,6 +8647,8 @@ pub fn run() {
             get_notification_prefs,
             set_notification_pref,
             fetch_link_preview,
+            admin_signing::sign_admin_challenge,
+            admin_signing::generate_admin_panel_token,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -14,6 +14,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon"] }
 tauri-plugin-shell = "2"
 tauri-plugin-deep-link = "2"
+tauri-plugin-dialog = "2"
 tauri-plugin-updater = "2"
 tracing = { workspace = true }
 serde = { version = "1", features = ["derive"] }
@@ -35,4 +36,5 @@ voxply-voice = { path = "../../voice" }
 tokio-tungstenite = { version = "0.24", features = ["native-tls"] }
 futures-util = "0.3"
 dirs = "6"
+url = "2"
 mime_guess = "2"
