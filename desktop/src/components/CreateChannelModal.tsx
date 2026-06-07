@@ -7,8 +7,12 @@ interface Props {
   onNameChange: (v: string) => void;
   description: string;
   onDescriptionChange: (v: string) => void;
-  channelType: "text" | "forum" | "category";
-  onChannelTypeChange: (v: "text" | "forum" | "category") => void;
+  channelType: "text" | "forum" | "category" | "banner";
+  onChannelTypeChange: (v: "text" | "forum" | "category" | "banner") => void;
+  bannerUrl: string;
+  onBannerUrlChange: (v: string) => void;
+  bannerSourceMode: "url" | "upload";
+  onBannerSourceModeChange: (v: "url" | "upload") => void;
   parentId: string | null;
   onCreate: () => void;
   onClose: () => void;
@@ -16,7 +20,10 @@ interface Props {
 
 export function CreateChannelModal({
   name, onNameChange, description, onDescriptionChange,
-  channelType, onChannelTypeChange, parentId, onCreate, onClose,
+  channelType, onChannelTypeChange,
+  bannerUrl, onBannerUrlChange,
+  bannerSourceMode, onBannerSourceModeChange,
+  parentId, onCreate, onClose,
 }: Props) {
   const { t } = useTranslation();
   return (
@@ -28,13 +35,14 @@ export function CreateChannelModal({
           {parentId ? t("channel.create.inside_category") : ""}
         </h3>
         <div className="channel-type-row">
-          {(["text", "forum", "category"] as const).map((ty) => (
+          {(["text", "forum", "category", "banner"] as const).map((ty) => (
             <button key={ty} type="button"
               className={`channel-type-btn ${channelType === ty ? "selected" : ""}`}
               onClick={() => onChannelTypeChange(ty)}>
               {ty === "text" ? t("channel.create.type_channel")
                : ty === "forum" ? t("channel.create.type_forum")
-               : t("channel.create.type_category")}
+               : ty === "category" ? t("channel.create.type_category")
+               : "Banner"}
             </button>
           ))}
         </div>
@@ -46,11 +54,35 @@ export function CreateChannelModal({
             if (e.key === "Enter") onCreate();
             if (e.key === "Escape") onClose();
           }}
-          placeholder={channelType === "category" ? t("channel.create.name_placeholder_category") : t("channel.create.name_placeholder_channel")}
+          placeholder={channelType === "category" ? t("channel.create.name_placeholder_category") : "Internal name"}
           maxLength={64}
           autoFocus
         />
-        {channelType !== "category" && (
+        {channelType === "banner" && (
+          <div className="settings-section">
+            <div className="channel-type-row">
+              {(["url", "upload"] as const).map((mode) => (
+                <button key={mode} type="button"
+                  className={`channel-type-btn ${bannerSourceMode === mode ? "selected" : ""}`}
+                  onClick={() => onBannerSourceModeChange(mode)}>
+                  {mode === "url" ? "External URL" : "Hub upload"}
+                </button>
+              ))}
+            </div>
+            {bannerSourceMode === "url" ? (
+              <input
+                type="url"
+                value={bannerUrl}
+                onChange={(e) => onBannerUrlChange(e.target.value)}
+                placeholder="https://example.com/banner.png"
+                maxLength={2048}
+              />
+            ) : (
+              <p className="muted">Create the banner first, then upload an image via the channel settings.</p>
+            )}
+          </div>
+        )}
+        {channelType !== "category" && channelType !== "banner" && (
           <textarea
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}

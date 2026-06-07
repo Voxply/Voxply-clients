@@ -242,7 +242,7 @@ export function ChannelSidebar({
       if (collapsedCategories[activeHubId]?.[node.node.id]) {
         onToggleCategoryCollapsed(activeHubId, node.node.id);
       }
-    } else if ((e.key === "Enter" || e.key === " ") && !node.node.is_category) {
+    } else if ((e.key === "Enter" || e.key === " ") && !node.node.is_category && node.node.channel_type !== "banner") {
       e.preventDefault();
       onSelectChannel(node.node);
     }
@@ -368,7 +368,21 @@ export function ChannelSidebar({
                         onAdd={() => onOpenCreateChannel(n.node.id)}
                         onSettings={isAdmin ? (_e) => onOpenChannelSettings(n.node) : undefined}
                       />
-                    ) : (
+                    ) : n.node.channel_type === "banner" ? (() => {
+                      const hubUrl = activeHub?.hub_url ?? "";
+                      const src = n.node.banner_url ?? (n.node.banner_file_id ? `${hubUrl}/uploads/${n.node.banner_file_id}` : null);
+                      if (!src) return null;
+                      return (
+                        <li key={n.node.id} style={{ padding: "4px 0", listStyle: "none" }}>
+                          <img
+                            src={src}
+                            alt=""
+                            style={{ width: "100%", height: "auto", display: "block", borderRadius: 4 }}
+                            draggable={false}
+                          />
+                        </li>
+                      );
+                    })() : (
                       <SortableChannelItem
                         key={n.node.id}
                         channel={n.node}

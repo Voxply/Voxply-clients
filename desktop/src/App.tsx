@@ -484,7 +484,9 @@ function App() {
   const [showCreateChannel, setShowCreateChannel] = useState(false);
   const [newChannelName, setNewChannelName] = useState("");
   const [newChannelDescription, setNewChannelDescription] = useState("");
-  const [newChannelType, setNewChannelType] = useState<"text" | "forum" | "category">("text");
+  const [newChannelType, setNewChannelType] = useState<"text" | "forum" | "category" | "banner">("text");
+  const [newBannerUrl, setNewBannerUrl] = useState("");
+  const [newBannerSourceMode, setNewBannerSourceMode] = useState<"url" | "upload">("url");
   const [newChannelParentId, setNewChannelParentId] = useState<string | null>(null);
 
   // Edit description dialog
@@ -1997,8 +1999,8 @@ function App() {
   useEffect(() => {
     if (selectedChannel) return;
     if (channels.length === 0) return;
-    // Skip categories (containers) — pick the first leaf channel.
-    const firstLeaf = channels.find((c) => !c.is_category);
+    // Skip categories and banner channels — pick the first interactive leaf.
+    const firstLeaf = channels.find((c) => !c.is_category && c.channel_type !== "banner");
     if (firstLeaf) {
       selectChannel(firstLeaf);
     }
@@ -2866,14 +2868,17 @@ function App() {
         isCategory: newChannelType === "category",
         channelType: newChannelType === "category" ? undefined : newChannelType,
         description: desc ? desc : null,
+        bannerUrl: newChannelType === "banner" ? (newBannerUrl.trim() || null) : null,
       });
       setChannels((prev) => [...prev, channel]);
       setNewChannelName("");
       setNewChannelDescription("");
       setNewChannelType("text");
       setNewChannelParentId(null);
+      setNewBannerUrl("");
+      setNewBannerSourceMode("url");
       setShowCreateChannel(false);
-      if (!channel.is_category) {
+      if (!channel.is_category && channel.channel_type !== "banner") {
         selectChannel(channel);
       }
     } catch (e) {
@@ -3613,6 +3618,10 @@ function App() {
             onDescriptionChange={setNewChannelDescription}
             channelType={newChannelType}
             onChannelTypeChange={setNewChannelType}
+            bannerUrl={newBannerUrl}
+            onBannerUrlChange={setNewBannerUrl}
+            bannerSourceMode={newBannerSourceMode}
+            onBannerSourceModeChange={setNewBannerSourceMode}
             parentId={newChannelParentId}
             onCreate={handleCreateChannel}
             onClose={() => setShowCreateChannel(false)}

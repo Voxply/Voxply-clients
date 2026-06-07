@@ -288,6 +288,10 @@ struct ChannelInfo {
     color: Option<String>,
     custom_icon_svg: Option<String>,
     created_at: i64,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    banner_url: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    banner_file_id: Option<String>,
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
@@ -1762,6 +1766,7 @@ async fn create_channel(
     is_category: bool,
     description: Option<String>,
     channel_type: Option<String>,
+    banner_url: Option<String>,
     state: State<'_, AppState>,
 ) -> Result<ChannelInfo, String> {
     let (hub_url, token) = active_session(&state)?;
@@ -1775,6 +1780,7 @@ async fn create_channel(
             "is_category": is_category,
             "description": description,
             "channel_type": channel_type,
+            "banner_url": banner_url,
         }))
         .send()
         .await

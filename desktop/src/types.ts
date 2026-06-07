@@ -10,13 +10,15 @@ export interface Channel {
   created_by: string;
   parent_id: string | null;
   is_category: boolean;
-  channel_type: "text" | "forum";
+  channel_type: "text" | "forum" | "banner";
   display_order: number;
   description: string | null;
   icon: string | null;
   color: string | null;
   custom_icon_svg: string | null;
   created_at: number;
+  banner_url?: string | null;
+  banner_file_id?: string | null;
 }
 
 export interface HubIcon {
@@ -663,7 +665,7 @@ export interface WebhookCreatedResult {
 
 // ---- channel_type ----
 
-export type ChannelType = "text" | "forum";
+export type ChannelType = "text" | "forum" | "banner";
 
 // ---- Forum ----
 
