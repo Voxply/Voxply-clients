@@ -49,12 +49,18 @@ impl AuthCredentials {
         client: &reqwest::Client,
         invite_code: Option<&str>,
     ) -> Result<String, String> {
-        let challenge_resp: ChallengeResponse = client
+        let challenge_raw = client
             .post(format!("{hub_url}/auth/challenge"))
             .json(&serde_json::json!({ "public_key": self.public_key_hex }))
             .send()
             .await
-            .map_err(|e| format!("challenge: {e}"))?
+            .map_err(|e| format!("challenge: {e}"))?;
+        if !challenge_raw.status().is_success() {
+            let status = challenge_raw.status();
+            let body = challenge_raw.text().await.unwrap_or_default();
+            return Err(format!("challenge rejected ({status}): {body}"));
+        }
+        let challenge_resp: ChallengeResponse = challenge_raw
             .json()
             .await
             .map_err(|e| format!("challenge decode: {e}"))?;
