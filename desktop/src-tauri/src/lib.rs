@@ -6609,6 +6609,104 @@ async fn create_hub_on_farm(
     resp.json().await.map_err(|e| format!("Invalid response: {e}"))
 }
 
+/// GET /farm/admin/servers
+#[tauri::command]
+async fn get_farm_servers(
+    farm_url: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let token = session_for_url(&state, &farm_url)?;
+    let base = farm_url.trim_end_matches('/');
+    let resp = state.http_client
+        .get(format!("{base}/farm/admin/servers"))
+        .bearer_auth(&token)
+        .send().await.map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+/// POST /farm/admin/server-token
+#[tauri::command]
+async fn generate_farm_server_token(
+    farm_url: String,
+    name: String,
+    region: Option<String>,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let token = session_for_url(&state, &farm_url)?;
+    let base = farm_url.trim_end_matches('/');
+    let resp = state.http_client
+        .post(format!("{base}/farm/admin/server-token"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "name": name, "region": region }))
+        .send().await.map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+/// POST /farm/admin/totp/setup
+#[tauri::command]
+async fn farm_totp_setup(
+    farm_url: String,
+    state: State<'_, AppState>,
+) -> Result<serde_json::Value, String> {
+    let token = session_for_url(&state, &farm_url)?;
+    let base = farm_url.trim_end_matches('/');
+    let resp = state.http_client
+        .post(format!("{base}/farm/admin/totp/setup"))
+        .bearer_auth(&token)
+        .send().await.map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    resp.json().await.map_err(|e| format!("Invalid response: {e}"))
+}
+
+/// POST /farm/admin/totp/confirm
+#[tauri::command]
+async fn farm_totp_confirm(
+    farm_url: String,
+    secret: String,
+    code: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &farm_url)?;
+    let base = farm_url.trim_end_matches('/');
+    let resp = state.http_client
+        .post(format!("{base}/farm/admin/totp/confirm"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "secret": secret, "code": code }))
+        .send().await.map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+/// POST /farm/admin/totp/disable
+#[tauri::command]
+async fn farm_totp_disable(
+    farm_url: String,
+    code: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let token = session_for_url(&state, &farm_url)?;
+    let base = farm_url.trim_end_matches('/');
+    let resp = state.http_client
+        .post(format!("{base}/farm/admin/totp/disable"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({ "code": code }))
+        .send().await.map_err(|e| format!("Request failed: {e}"))?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
 // ---------------------------------------------------------------------------
 // Recovery contacts + key rotation commands
 // ---------------------------------------------------------------------------
@@ -8523,6 +8621,11 @@ pub fn run() {
             get_farm_users,
             revoke_farm_user_sessions,
             create_hub_on_farm,
+            get_farm_servers,
+            generate_farm_server_token,
+            farm_totp_setup,
+            farm_totp_confirm,
+            farm_totp_disable,
             list_recovery_contacts,
             add_recovery_contact,
             remove_recovery_contact,

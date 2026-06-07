@@ -10,7 +10,7 @@ import type {
 import { formatPubkey, formatRelative } from "../utils/format";
 import { FocusTrap } from "./FocusTrap";
 
-export type FarmAdminTab = "general" | "hubs" | "users";
+export type FarmAdminTab = "general" | "hubs" | "users" | "servers" | "security";
 
 interface Props {
   farmUrl: string;
@@ -610,6 +610,335 @@ function UsersTab({ farmUrl }: { farmUrl: string }) {
   );
 }
 
+interface FarmServerEntry {
+  id: string;
+  name: string;
+  region: string | null;
+  connected: boolean;
+  last_seen_at: number | null;
+}
+
+function ServersTab({ farmUrl }: { farmUrl: string }) {
+  const { t } = useTranslation();
+  const [servers, setServers] = useState<FarmServerEntry[]>([]);
+  const [loadingServers, setLoadingServers] = useState(true);
+  const [showRegisterForm, setShowRegisterForm] = useState(false);
+  const [newServerName, setNewServerName] = useState("");
+  const [newServerRegion, setNewServerRegion] = useState("");
+  const [generatedToken, setGeneratedToken] = useState<{ server_id: string; token: string } | null>(null);
+  const [registering, setRegistering] = useState(false);
+  const [registerError, setRegisterError] = useState<string | null>(null);
+
+  async function loadServers() {
+    setLoadingServers(true);
+    try {
+      const result = await invoke<{ servers: FarmServerEntry[] }>("get_farm_servers", { farmUrl });
+      setServers(result.servers);
+    } catch {
+      // silently keep previous list on error
+    } finally {
+      setLoadingServers(false);
+    }
+  }
+
+  useEffect(() => { loadServers(); }, [farmUrl]);
+
+  async function handleGenerateToken() {
+    if (!newServerName.trim()) return;
+    setRegistering(true);
+    setRegisterError(null);
+    try {
+      const result = await invoke<{ server_id: string; token: string }>("generate_farm_server_token", {
+        farmUrl,
+        name: newServerName.trim(),
+        region: newServerRegion.trim() || null,
+      });
+      setGeneratedToken(result);
+      setNewServerName("");
+      setNewServerRegion("");
+      setShowRegisterForm(false);
+      await loadServers();
+    } catch (e) {
+      setRegisterError(String(e));
+    } finally {
+      setRegistering(false);
+    }
+  }
+
+  return (
+    <section>
+      <h1>{t("farm.settings.tabs.servers")}</h1>
+
+      {loadingServers ? (
+        <p className="muted">{t("bot.card.loading")}</p>
+      ) : servers.length === 0 ? (
+        <p className="muted">{t("farm.settings.servers.empty")}</p>
+      ) : (
+        <table className="members-table">
+          <thead>
+            <tr>
+              <th>{t("farm.settings.servers.col.name")}</th>
+              <th>{t("farm.settings.servers.col.region")}</th>
+              <th>{t("farm.settings.servers.col.status")}</th>
+              <th>{t("farm.settings.servers.col.last_seen")}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {servers.map((srv) => (
+              <tr key={srv.id}>
+                <td><strong>{srv.name}</strong></td>
+                <td>{srv.region ?? <span className="muted">—</span>}</td>
+                <td>
+                  <span style={{ display: "inline-flex", alignItems: "center", gap: 6 }}>
+                    <span style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: srv.connected ? "var(--success)" : "var(--border)",
+                      flexShrink: 0,
+                    }} />
+                    {srv.connected
+                      ? t("farm.settings.servers.status.connected")
+                      : t("farm.settings.servers.status.offline")}
+                  </span>
+                </td>
+                <td>
+                  {srv.last_seen_at ? formatRelative(srv.last_seen_at) : <span className="muted">—</span>}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+
+      {generatedToken && (
+        <div className="settings-section" style={{ marginTop: 16, background: "var(--bg-elevated)", borderRadius: 8, padding: 16, border: "1px solid var(--border)" }}>
+          <p style={{ color: "var(--warning, var(--accent))", fontWeight: 600, marginBottom: 8 }}>
+            {t("farm.settings.servers.token_once")}
+          </p>
+          <code style={{
+            display: "block",
+            padding: "8px 12px",
+            background: "var(--bg-base, var(--bg))",
+            borderRadius: 6,
+            fontFamily: "monospace",
+            fontSize: "var(--text-sm)",
+            wordBreak: "break-all",
+            userSelect: "all",
+            border: "1px solid var(--border)",
+          }}>
+            {generatedToken.token}
+          </code>
+          <button
+            className="btn-secondary"
+            style={{ marginTop: 8 }}
+            onClick={() => navigator.clipboard.writeText(generatedToken.token)}
+          >
+            {t("farm.settings.servers.copy_token")}
+          </button>
+          <button
+            className="btn-secondary"
+            style={{ marginTop: 8, marginLeft: 8 }}
+            onClick={() => setGeneratedToken(null)}
+          >
+            {t("modal.close")}
+          </button>
+        </div>
+      )}
+
+      <div className="settings-section" style={{ marginTop: 16 }}>
+        {!showRegisterForm ? (
+          <button onClick={() => { setShowRegisterForm(true); setRegisterError(null); }}>
+            {t("farm.settings.servers.register")}
+          </button>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10, maxWidth: 400 }}>
+            <label className="settings-label" htmlFor="new-server-name">
+              {t("farm.settings.servers.name_label")}
+            </label>
+            <input
+              id="new-server-name"
+              type="text"
+              value={newServerName}
+              onChange={(e) => setNewServerName(e.target.value)}
+              placeholder={t("farm.settings.servers.name_placeholder")}
+              autoFocus
+            />
+            <label className="settings-label" htmlFor="new-server-region">
+              {t("farm.settings.servers.region_label")}
+            </label>
+            <input
+              id="new-server-region"
+              type="text"
+              value={newServerRegion}
+              onChange={(e) => setNewServerRegion(e.target.value)}
+              placeholder={t("farm.settings.servers.region_placeholder")}
+            />
+            {registerError && <p className="error-text">{registerError}</p>}
+            <div style={{ display: "flex", gap: 8 }}>
+              <button onClick={handleGenerateToken} disabled={registering || !newServerName.trim()}>
+                {registering ? t("farm.settings.servers.generating") : t("farm.settings.servers.generate_token")}
+              </button>
+              <button className="btn-secondary" onClick={() => { setShowRegisterForm(false); setRegisterError(null); }}>
+                {t("modal.cancel")}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+function SecurityTab({ farmUrl }: { farmUrl: string }) {
+  const { t } = useTranslation();
+  const [totpEnabled, setTotpEnabled] = useState(false);
+  const [setupData, setSetupData] = useState<{ secret: string; qr_url: string } | null>(null);
+  const [confirmCode, setConfirmCode] = useState("");
+  const [disableCode, setDisableCode] = useState("");
+  const [totpError, setTotpError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  async function handleSetup() {
+    setBusy(true);
+    setTotpError(null);
+    try {
+      const result = await invoke<{ secret: string; qr_url: string }>("farm_totp_setup", { farmUrl });
+      setSetupData(result);
+    } catch (e) {
+      setTotpError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleConfirm() {
+    if (!setupData || !confirmCode.trim()) return;
+    setBusy(true);
+    setTotpError(null);
+    try {
+      await invoke("farm_totp_confirm", { farmUrl, secret: setupData.secret, code: confirmCode.trim() });
+      setTotpEnabled(true);
+      setSetupData(null);
+      setConfirmCode("");
+    } catch (e) {
+      setTotpError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleDisable() {
+    if (!disableCode.trim()) return;
+    setBusy(true);
+    setTotpError(null);
+    try {
+      await invoke("farm_totp_disable", { farmUrl, code: disableCode.trim() });
+      setTotpEnabled(false);
+      setDisableCode("");
+    } catch (e) {
+      setTotpError(String(e));
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <section>
+      <h1>{t("farm.settings.tabs.security")}</h1>
+
+      <div className="settings-section">
+        <label className="settings-label">{t("farm.settings.security.totp.label")}</label>
+
+        {totpEnabled ? (
+          <>
+            <p>
+              <span className="badge badge-green">{t("farm.settings.security.totp.enabled_badge")}</span>
+            </p>
+            <p className="muted" style={{ marginTop: 8 }}>{t("farm.settings.security.totp.disable_hint")}</p>
+            <input
+              type="text"
+              inputMode="numeric"
+              maxLength={6}
+              value={disableCode}
+              onChange={(e) => setDisableCode(e.target.value)}
+              placeholder={t("farm.settings.security.totp.code_placeholder")}
+              style={{ width: 140, marginTop: 8, fontFamily: "monospace" }}
+            />
+            {totpError && <p className="error-text" style={{ marginTop: 6 }}>{totpError}</p>}
+            <div style={{ marginTop: 8 }}>
+              <button
+                style={{ background: "var(--danger)", color: "#fff" }}
+                onClick={handleDisable}
+                disabled={busy || !disableCode.trim()}
+              >
+                {busy ? t("farm.settings.security.totp.disabling") : t("farm.settings.security.totp.disable")}
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            {!setupData ? (
+              <>
+                <p className="muted">{t("farm.settings.security.totp.disabled_hint")}</p>
+                {totpError && <p className="error-text" style={{ marginTop: 6 }}>{totpError}</p>}
+                <div style={{ marginTop: 8 }}>
+                  <button onClick={handleSetup} disabled={busy}>
+                    {busy ? t("farm.settings.security.totp.setting_up") : t("farm.settings.security.totp.enable")}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="muted" style={{ marginBottom: 8 }}>{t("farm.settings.security.totp.scan_hint")}</p>
+                <div style={{
+                  background: "var(--bg-elevated)",
+                  border: "1px solid var(--border)",
+                  borderRadius: 6,
+                  padding: "10px 14px",
+                  marginBottom: 12,
+                  fontFamily: "monospace",
+                  fontSize: "var(--text-sm)",
+                  wordBreak: "break-all",
+                  userSelect: "all",
+                }}>
+                  {setupData.secret}
+                </div>
+                <label className="settings-label" htmlFor="totp-confirm-code">
+                  {t("farm.settings.security.totp.confirm_code_label")}
+                </label>
+                <input
+                  id="totp-confirm-code"
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={6}
+                  value={confirmCode}
+                  onChange={(e) => setConfirmCode(e.target.value)}
+                  placeholder={t("farm.settings.security.totp.code_placeholder")}
+                  style={{ width: 140, marginTop: 6, fontFamily: "monospace" }}
+                  autoFocus
+                />
+                {totpError && <p className="error-text" style={{ marginTop: 6 }}>{totpError}</p>}
+                <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+                  <button onClick={handleConfirm} disabled={busy || !confirmCode.trim()}>
+                    {busy ? t("farm.settings.security.totp.confirming") : t("farm.settings.security.totp.confirm_enable")}
+                  </button>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => { setSetupData(null); setConfirmCode(""); setTotpError(null); }}
+                  >
+                    {t("modal.cancel")}
+                  </button>
+                </div>
+              </>
+            )}
+          </>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function FarmSettingsPage({ farmUrl, tab, onTab, onClose }: Props) {
   const { t } = useTranslation();
 
@@ -617,6 +946,8 @@ export function FarmSettingsPage({ farmUrl, tab, onTab, onClose }: Props) {
     { id: "general", label: t("farm.settings.tabs.general") },
     { id: "hubs", label: t("farm.settings.tabs.hubs") },
     { id: "users", label: t("farm.settings.tabs.users") },
+    { id: "servers", label: t("farm.settings.tabs.servers") },
+    { id: "security", label: t("farm.settings.tabs.security") },
   ];
 
   useEffect(() => {
@@ -655,6 +986,8 @@ export function FarmSettingsPage({ farmUrl, tab, onTab, onClose }: Props) {
         {tab === "general" && <GeneralTab farmUrl={farmUrl} />}
         {tab === "hubs" && <HubsTab farmUrl={farmUrl} />}
         {tab === "users" && <UsersTab farmUrl={farmUrl} />}
+        {tab === "servers" && <ServersTab farmUrl={farmUrl} />}
+        {tab === "security" && <SecurityTab farmUrl={farmUrl} />}
       </main>
     </div>
     </FocusTrap>
