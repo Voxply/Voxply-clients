@@ -493,6 +493,12 @@ enum WsServerMessage {
         sender_name: Option<String>,
         typing: bool,
     },
+    #[serde(rename = "dm_member_changed")]
+    DmMemberChanged {
+        conversation_id: String,
+        added: Vec<String>,
+        removed: Vec<String>,
+    },
     #[serde(rename = "voice_roster_update")]
     VoiceRosterUpdate {
         channel_id: String,
@@ -1388,6 +1394,14 @@ async fn spawn_ws_task(
                                             "sender": sender,
                                             "sender_name": sender_name,
                                             "typing": typing,
+                                        }));
+                                    }
+                                    WsServerMessage::DmMemberChanged { conversation_id, added, removed } => {
+                                        let _ = app.emit("dm-member-changed", serde_json::json!({
+                                            "hub_id": hub_id_for_task,
+                                            "conversation_id": conversation_id,
+                                            "added": added,
+                                            "removed": removed,
                                         }));
                                     }
                                     WsServerMessage::VoiceRosterUpdate { channel_id, participants } => {
@@ -5341,6 +5355,122 @@ async fn push_group_sender_key(
     save_sender_key_state(&key_state)
 }
 
+/// Like push_group_sender_key but always generates a fresh chain key (bumps version).
+/// Called when a member is removed from a group conversation so past-key holders
+/// can no longer decrypt future messages.
+#[tauri::command]
+async fn rotate_group_sender_key(
+    conv_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    use rand::RngCore;
+
+    let identity_path = crate::identity::Identity::default_path().map_err(|e| e.to_string())?;
+    let identity = crate::identity::Identity::load(&identity_path).map_err(|e| e.to_string())?;
+    let (my_dh_sec, _) = identity.dh_keypair();
+
+    let mut key_state = load_sender_key_state()?;
+
+    // Always generate a new chain key with an incremented version.
+    let old_version = key_state["my_keys"][&conv_id]
+        .as_object()
+        .and_then(|o| o.get("version"))
+        .and_then(|v| v.as_u64())
+        .unwrap_or(0) as u32;
+    let mut new_chain_key = [0u8; 32];
+    rand::rngs::OsRng.fill_bytes(&mut new_chain_key);
+    let new_version = old_version + 1;
+    let iteration = 0u32;
+
+    let (hub_url, token) = active_session(&state)?;
+    let client = state.http_client.clone();
+
+    let convs: Vec<serde_json::Value> = client
+        .get(format!("{hub_url}/conversations"))
+        .bearer_auth(&token)
+        .send().await.map_err(|e| format!("Failed: {e}"))?
+        .json().await.map_err(|e| format!("Invalid: {e}"))?;
+
+    let members: Vec<String> = convs.iter()
+        .find(|c| c["id"].as_str() == Some(&conv_id))
+        .and_then(|c| c["members"].as_array())
+        .map(|arr| arr.iter().filter_map(|v| v.as_str().map(|s| s.to_string())).collect())
+        .unwrap_or_default();
+
+    let my_pubkey = identity.public_key_hex();
+    let mut recipients: Vec<(String, String)> = Vec::new();
+
+    for member in &members {
+        if member == &my_pubkey {
+            continue;
+        }
+        let dh_resp: serde_json::Value = match client
+            .get(format!("{hub_url}/identity/{member}/dh-key"))
+            .bearer_auth(&token)
+            .send().await
+        {
+            Ok(r) if r.status().is_success() => r.json().await.unwrap_or(serde_json::Value::Null),
+            _ => continue,
+        };
+        let dh_hex = match dh_resp["dh_pubkey_hex"].as_str() {
+            Some(h) => h.to_string(),
+            None => continue,
+        };
+        let dh_bytes = match hex::decode(&dh_hex) {
+            Ok(b) => b,
+            Err(_) => continue,
+        };
+        let dh_arr: [u8; 32] = match dh_bytes.try_into() {
+            Ok(a) => a,
+            Err(_) => continue,
+        };
+        let rec_pub = x25519_dalek::PublicKey::from(dh_arr);
+        let (wrapped_hex, nonce_hex) = match wrap_chain_key(&my_dh_sec, &rec_pub, &conv_id, &new_chain_key, iteration) {
+            Ok(v) => v,
+            Err(_) => continue,
+        };
+        recipients.push((member.clone(), format!("{}:{}", wrapped_hex, nonce_hex)));
+    }
+
+    let signing_bytes = sender_key_dist_signing_bytes(&conv_id, new_version, &recipients);
+    let signature_hex = hex::encode(identity.sign(&signing_bytes).to_bytes());
+
+    let recipients_json: Vec<serde_json::Value> = recipients.iter().map(|(pubkey, packed)| {
+        let parts: Vec<&str> = packed.splitn(2, ':').collect();
+        serde_json::json!({
+            "recipient_pubkey": pubkey,
+            "wrapped_key_hex": parts[0],
+            "wrap_nonce_hex": parts[1],
+        })
+    }).collect();
+
+    let resp = client
+        .put(format!("{hub_url}/conversations/{conv_id}/sender-keys"))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({
+            "sender_pubkey": my_pubkey,
+            "sender_key_version": new_version,
+            "iteration": iteration,
+            "recipients": recipients_json,
+            "signature_hex": signature_hex,
+        }))
+        .send().await.map_err(|e| format!("Failed: {e}"))?;
+
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+
+    if key_state["my_keys"].is_null() || !key_state["my_keys"].is_object() {
+        key_state["my_keys"] = serde_json::json!({});
+    }
+    key_state["my_keys"][&conv_id] = serde_json::json!({
+        "version": new_version,
+        "chain_key_hex": hex::encode(new_chain_key),
+        "iteration": iteration,
+    });
+    save_sender_key_state(&key_state)
+}
+
 #[tauri::command]
 async fn fetch_group_sender_keys(
     conv_id: String,
@@ -8693,6 +8823,7 @@ pub fn run() {
             encrypt_dm,
             decrypt_dm,
             push_group_sender_key,
+            rotate_group_sender_key,
             fetch_group_sender_keys,
             encrypt_group_dm,
             decrypt_group_dm,

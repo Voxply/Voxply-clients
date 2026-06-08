@@ -1042,6 +1042,31 @@ function App() {
       unlistens.push(
         await listen<{
           hub_id: string;
+          conversation_id: string;
+          added: string[];
+          removed: string[];
+        }>("dm-member-changed", (event) => {
+          if (event.payload.hub_id !== activeHubIdRef.current) return;
+          const myKey = publicKeyRef.current;
+          if (myKey && event.payload.removed.includes(myKey)) {
+            // I was removed — clear selection if viewing this conversation.
+            if (selectedConversationIdRef.current === event.payload.conversation_id) {
+              setSelectedConversation(null);
+            }
+          }
+          // Refresh conversation list so membership changes are visible.
+          void loadConversations();
+          // Rotate sender key on any membership change to prevent removed
+          // members from decrypting future messages.
+          void invoke("rotate_group_sender_key", {
+            convId: event.payload.conversation_id,
+          }).catch(() => {});
+        }),
+      );
+
+      unlistens.push(
+        await listen<{
+          hub_id: string;
           channel_id: string;
           public_key: string;
           display_name: string | null;
