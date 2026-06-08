@@ -173,7 +173,7 @@ export const MISSIONS_SERVICE_URL = "https://discovery.voxply.app";
 export const MISSIONS_ENABLED = true;
 
 export const THEMES: {
-  id: "calm" | "classic" | "linear" | "light";
+  id: "calm" | "classic" | "linear" | "light" | "custom";
   name: string;
   tagline: string;
   swatches: [string, string, string];
@@ -201,5 +201,11 @@ export const THEMES: {
     name: "Light",
     tagline: "Off-white with a dusty teal accent. Reads well in daylight.",
     swatches: ["#fafaf7", "#f5f4ef", "#4a8d7a"],
+  },
+  {
+    id: "custom",
+    name: "Custom",
+    tagline: "Your own skin. Edit tokens below after selecting this slot.",
+    swatches: ["#888888", "#aaaaaa", "#cccccc"],
   },
 ];
