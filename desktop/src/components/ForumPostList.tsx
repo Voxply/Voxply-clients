@@ -73,6 +73,9 @@ export function ForumPostList({ channel, users, myRoles, activeHubUrl, onSelectP
         </div>
         <div className="forum-post-row-aside muted">
           {post.reply_count} {post.reply_count === 1 ? "reply" : "replies"}
+          {post.unread_reply_count != null && post.unread_reply_count > 0 && (
+            <span className="unread-badge">{post.unread_reply_count} new</span>
+          )}
         </div>
       </div>
     );

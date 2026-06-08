@@ -39,12 +39,17 @@ export function ForumPostDetail({
       });
       setDetail(d);
       setReplyCursor(d.reply_cursor ?? null);
+      // Fire-and-forget: mark this post as read.
+      void invoke("mark_post_read", {
+        channelId: channelId,
+        postId: postSummary.id,
+      }).catch(() => undefined);
     } catch (e) {
       setError(String(e));
     } finally {
       setLoading(false);
     }
-  }, [activeHubUrl, postSummary.id]);
+  }, [activeHubUrl, channelId, postSummary.id]);
 
   useEffect(() => { load(); }, [load]);
 

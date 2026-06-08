@@ -2559,6 +2559,29 @@ async fn forum_lock_post(
 }
 
 #[tauri::command]
+async fn mark_post_read(
+    channel_id: String,
+    post_id: String,
+    state: State<'_, AppState>,
+) -> Result<(), String> {
+    let (hub_url, token) = active_session(&state)?;
+    let resp = state
+        .http_client
+        .post(format!(
+            "{hub_url}/channels/{channel_id}/posts/{post_id}/read"
+        ))
+        .bearer_auth(&token)
+        .json(&serde_json::json!({}))
+        .send()
+        .await
+        .map_err(|e| e.to_string())?;
+    if !resp.status().is_success() {
+        return Err(resp.text().await.unwrap_or_default());
+    }
+    Ok(())
+}
+
+#[tauri::command]
 fn subscribe_channel(channel_id: String, state: State<'_, AppState>) -> Result<(), String> {
     let tx = active_ws_tx(&state)?;
     tx.send(WsCommand::Subscribe(channel_id))
@@ -8756,6 +8779,7 @@ pub fn run() {
             forum_get_post_replies,
             forum_pin_post,
             forum_lock_post,
+            mark_post_read,
             subscribe_channel,
             unsubscribe_channel,
             set_typing,
