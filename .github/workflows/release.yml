@@ -6,8 +6,33 @@ on:
       - "v*"
 
 jobs:
+  changelog:
+    name: Create release with changelog
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Generate release notes (current tag only)
+        uses: orhun/git-cliff-action@v4
+        with:
+          config: cliff.toml
+          args: --latest --strip header
+        env:
+          OUTPUT: CHANGES.md
+          GITHUB_REPO: ${{ github.repository }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          body_path: CHANGES.md
+
   build:
     name: Build ${{ matrix.platform }}
+    needs: changelog
     strategy:
       fail-fast: false
       matrix:
