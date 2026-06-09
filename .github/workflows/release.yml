@@ -114,50 +114,64 @@ jobs:
         working-directory: desktop/desktop
         run: npm ci
 
-      - name: Sign inner binary (Windows)
-        if: matrix.platform == 'windows-latest' && env.WINDOWS_CERT_THUMBPRINT != ''
-        env:
-          WINDOWS_CERT_THUMBPRINT: ${{ secrets.WINDOWS_CERT_THUMBPRINT }}
-          SIGNING_HSM_CREDENTIALS: ${{ secrets.SIGNING_HSM_CREDENTIALS }}
-        shell: pwsh
-        run: |
-          $exePath = "desktop\desktop\src-tauri\target\release\voxply.exe"
-          if (Test-Path $exePath) {
-            signtool sign /fd sha256 /tr http://timestamp.sectigo.com /td sha256 `
-              /sha1 $env:WINDOWS_CERT_THUMBPRINT $exePath
-            Write-Output "Signed: $exePath"
-          } else {
-            Write-Output "Binary not yet built, will sign installer instead"
-          }
-
-      # Authenticode signing activates when WINDOWS_CERT_THUMBPRINT is set. See docs/code-signing.md
+      # Authenticode signing: SignPath submits the unsigned installer to the
+      # SignPath cloud HSM for EV signing, then we swap in the signed copy.
+      # Activates only when SIGNPATH_API_TOKEN is set. See docs/code-signing.md
       - name: Tauri build
         working-directory: desktop/desktop
         env:
-          # Required to sign auto-update payloads.
-          # Add TAURI_SIGNING_PRIVATE_KEY and TAURI_SIGNING_PRIVATE_KEY_PASSWORD
-          # to repository secrets (Settings -> Secrets -> Actions).
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build ${{ matrix.args }}
 
-      - name: Sign installer (Windows)
-        if: matrix.platform == 'windows-latest' && env.WINDOWS_CERT_THUMBPRINT != ''
-        env:
-          WINDOWS_CERT_THUMBPRINT: ${{ secrets.WINDOWS_CERT_THUMBPRINT }}
-          SIGNING_HSM_CREDENTIALS: ${{ secrets.SIGNING_HSM_CREDENTIALS }}
+      - name: Stage unsigned installer (Windows)
+        if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
           $installer = Get-ChildItem "desktop\desktop\src-tauri\target\release\bundle\nsis\*.exe" | Select-Object -First 1
-          if ($installer) {
-            signtool sign /fd sha256 /tr http://timestamp.sectigo.com /td sha256 `
-              /sha1 $env:WINDOWS_CERT_THUMBPRINT $installer.FullName
-            Write-Output "Signed: $($installer.FullName)"
-            signtool verify /pa /v $installer.FullName
-            Write-Output "Verification passed"
-          } else {
-            Write-Output "No NSIS installer found to sign"
-          }
+          if (-not $installer) { throw "No NSIS installer found" }
+          New-Item -ItemType Directory -Force "signing-input" | Out-Null
+          Copy-Item $installer.FullName "signing-input\voxply-setup.exe"
+          Write-Output "Staged: $($installer.FullName)"
+
+      - name: Upload unsigned installer for SignPath (Windows)
+        if: matrix.platform == 'windows-latest'
+        uses: actions/upload-artifact@v4
+        with:
+          name: unsigned-installer
+          path: signing-input/voxply-setup.exe
+          retention-days: 1
+
+      - name: Sign installer via SignPath (Windows)
+        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        uses: signpath/github-action-submit-signing-request@v1
+        with:
+          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
+          project-slug: voxply-desktop
+          signing-policy-slug: release-signing
+          artifact-configuration-slug: nsis-installer
+          github-artifact-name: unsigned-installer
+          wait-for-completion: true
+          output-artifact-name: signed-installer
+
+      - name: Swap in signed installer (Windows)
+        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: signed-installer
+          path: signing-input
+
+      - name: Move signed installer into bundle dir (Windows)
+        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
+        shell: pwsh
+        run: |
+          $bundleDir = "desktop\desktop\src-tauri\target\release\bundle\nsis"
+          $original = Get-ChildItem $bundleDir -Filter "*.exe" | Select-Object -First 1
+          if ($original) { Remove-Item $original.FullName }
+          Copy-Item "signing-input\voxply-setup.exe" "$bundleDir\voxply-setup.exe"
+          signtool verify /pa /v "$bundleDir\voxply-setup.exe"
+          Write-Output "Signed installer verified"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@v3
