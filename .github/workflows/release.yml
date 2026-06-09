@@ -29,6 +29,7 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           body_path: CHANGES.md
+          prerelease: ${{ contains(github.ref_name, '-') }}
 
   build:
     name: Build ${{ matrix.platform }}
