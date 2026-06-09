@@ -89,6 +89,7 @@ import { WelcomeScreen } from "./components/WelcomeScreen";
 import { Lobby } from "./components/Lobby";
 import { BotChallenge } from "./components/BotChallenge";
 import { SurveyComponent } from "./components/Survey";
+import { UpdateBanner } from "./components/UpdateBanner";
 
 function App() {
   // Multi-hub state
@@ -1781,6 +1782,14 @@ function App() {
     return () => { unlisten.then((fn) => fn()); };
   }, []);
 
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; notes: string | null } | null>(null);
+  useEffect(() => {
+    const unlisten = listen<{ version: string; notes: string | null }>("update-available", (ev) => {
+      setUpdateInfo(ev.payload);
+    });
+    return () => { unlisten.then((fn) => fn()); };
+  }, []);
+
   // Debounced fetch of /info while the user types a hub URL.
   useEffect(() => {
     if (!showAddHub && !showWelcome) {
@@ -3203,6 +3212,13 @@ function App() {
         <div className="toast" onClick={() => setToast(null)}>
           {toast}
         </div>
+      )}
+      {updateInfo && (
+        <UpdateBanner
+          version={updateInfo.version}
+          notes={updateInfo.notes}
+          onDismiss={() => setUpdateInfo(null)}
+        />
       )}
       <>
         {showFarmSettings ? (

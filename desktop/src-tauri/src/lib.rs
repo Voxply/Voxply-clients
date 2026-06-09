@@ -73,6 +73,8 @@ struct AppState {
     http_client: reqwest::Client,
 }
 
+struct PendingUpdate(std::sync::Mutex<Option<tauri_plugin_updater::Update>>);
+
 struct HubSession {
     hub_id: String,
     hub_name: String,
@@ -5030,6 +5032,7 @@ fn set_tray_unread(count: u32, app: AppHandle) -> Result<(), String> {
 
 /// Background update check — fires once at startup and is entirely best-effort.
 /// Any error is logged at WARN level; nothing is propagated to the caller.
+/// On finding an update, emits `update-available` and stores it for user-triggered install.
 async fn check_for_updates(app: AppHandle) {
     use tauri_plugin_updater::UpdaterExt;
 
@@ -5064,12 +5067,28 @@ async fn check_for_updates(app: AppHandle) {
         },
     );
 
-    if let Err(e) = update
-        .download_and_install(|_, _| {}, || {})
-        .await
-    {
-        tracing::warn!("update download/install failed: {e}");
+    if let Some(state) = app.try_state::<PendingUpdate>() {
+        if let Ok(mut lock) = state.0.lock() {
+            *lock = Some(update);
+        }
     }
+}
+
+/// Download and install the pending update that was stored by `check_for_updates`.
+/// Triggers an app restart on completion. No-op if there is no pending update.
+#[tauri::command]
+async fn install_pending_update(pending: State<'_, PendingUpdate>) -> Result<(), String> {
+    let update = {
+        let mut lock = pending.0.lock().map_err(|e| e.to_string())?;
+        lock.take()
+    };
+    if let Some(update) = update {
+        update
+            .download_and_install(|_, _| {}, || {})
+            .await
+            .map_err(|e| e.to_string())?;
+    }
+    Ok(())
 }
 
 // ---------------------------------------------------------------------------
@@ -8696,6 +8715,7 @@ pub fn run() {
                 voice: Default::default(),
                 http_client: reqwest::Client::new(),
             });
+            app.manage(PendingUpdate(std::sync::Mutex::new(None)));
             // Kick off a background update check — best-effort, never blocks startup.
             let update_handle = app.handle().clone();
             tauri::async_runtime::spawn(check_for_updates(update_handle));
@@ -9035,6 +9055,7 @@ pub fn run() {
             fetch_link_preview,
             list_capture_sources,
             patch_channel_banner_file,
+            install_pending_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

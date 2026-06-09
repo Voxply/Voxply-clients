@@ -41,12 +41,16 @@ jobs:
           - platform: ubuntu-22.04
             args: --bundles appimage
             artifact: "*.AppImage"
+            platform-key: linux
           - platform: windows-latest
             args: --bundles nsis
             artifact: "*.exe"
+            platform-key: windows
           - platform: macos-latest
-            args: --target universal-apple-darwin --bundles dmg
+            # macos bundle produces the .app.tar.gz required by the updater
+            args: --target universal-apple-darwin --bundles dmg,macos
             artifact: "*.dmg"
+            platform-key: macos
 
     runs-on: ${{ matrix.platform }}
     permissions:
@@ -203,4 +207,105 @@ jobs:
         uses: softprops/action-gh-release@v3
         with:
           files: |
-            desktop/desktop/src-tauri/target/release/bundle/**/${{ matrix.artifact }}
+            desktop/desktop/src-tauri/target/**/release/bundle/**/${{ matrix.artifact }}
+
+      - name: Upload macOS updater bundle to GitHub Release
+        if: matrix.platform == 'macos-latest'
+        uses: softprops/action-gh-release@v3
+        with:
+          files: |
+            desktop/desktop/src-tauri/target/**/release/bundle/macos/*.app.tar.gz
+
+      # Collect the updater signature and bundle URL for latest.json assembly.
+      - name: Collect update metadata (Linux / macOS)
+        if: matrix.platform != 'windows-latest'
+        shell: bash
+        run: |
+          if [ "${{ matrix.platform }}" = "macos-latest" ]; then
+            SIG_FILE=$(find desktop/desktop/src-tauri/target -name "*.app.tar.gz.sig" 2>/dev/null | head -1)
+            BUNDLE=$(find desktop/desktop/src-tauri/target -name "*.app.tar.gz" ! -name "*.sig" 2>/dev/null | head -1)
+          else
+            SIG_FILE=$(find desktop/desktop/src-tauri/target -name "*.AppImage.sig" 2>/dev/null | head -1)
+            BUNDLE=$(find desktop/desktop/src-tauri/target -name "*.AppImage" ! -name "*.sig" 2>/dev/null | head -1)
+          fi
+          FILENAME=$(basename "$BUNDLE")
+          URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$FILENAME"
+          node -e "
+            const fs = require('fs');
+            const sig = fs.readFileSync('$SIG_FILE', 'utf8').trim();
+            process.stdout.write(JSON.stringify({url: '$URL', signature: sig}));
+          " > ${{ matrix.platform-key }}.json
+
+      - name: Collect update metadata (Windows)
+        if: matrix.platform == 'windows-latest'
+        shell: pwsh
+        run: |
+          $sigFile = Get-ChildItem -Path "desktop\desktop\src-tauri\target" -Recurse -Filter "*.exe.sig" | Select-Object -First 1
+          $exeFile = Get-ChildItem -Path "desktop\desktop\src-tauri\target" -Recurse -Filter "*.exe" |
+            Where-Object { $_.Extension -eq ".exe" -and $_.Name -notlike "*.sig" } |
+            Select-Object -First 1
+          $signature = (Get-Content $sigFile.FullName -Raw).Trim()
+          $filename = $exeFile.Name
+          $url = "https://github.com/$($env:GITHUB_REPOSITORY)/releases/download/$($env:GITHUB_REF_NAME)/$filename"
+          @{url=$url;signature=$signature} | ConvertTo-Json -Compress |
+            Out-File -FilePath windows.json -Encoding utf8NoBOM
+
+      - name: Upload update metadata artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: update-meta-${{ matrix.platform-key }}
+          path: ${{ matrix.platform-key }}.json
+          retention-days: 1
+
+  manifest:
+    name: Publish update manifest
+    needs: build
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+    steps:
+      - name: Download Linux metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: update-meta-linux
+          path: meta
+
+      - name: Download Windows metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: update-meta-windows
+          path: meta
+
+      - name: Download macOS metadata
+        uses: actions/download-artifact@v4
+        with:
+          name: update-meta-macos
+          path: meta
+
+      - name: Assemble latest.json
+        run: |
+          node -e "
+            const fs = require('fs');
+            const linux = JSON.parse(fs.readFileSync('meta/linux.json', 'utf8'));
+            const windows = JSON.parse(fs.readFileSync('meta/windows.json', 'utf8'));
+            const mac = JSON.parse(fs.readFileSync('meta/macos.json', 'utf8'));
+            const tag = process.env.GITHUB_REF_NAME;
+            const manifest = {
+              version: tag.replace(/^v/, ''),
+              notes: '',
+              pub_date: new Date().toISOString(),
+              platforms: {
+                'linux-x86_64': linux,
+                'windows-x86_64': windows,
+                'darwin-x86_64': mac,
+                'darwin-aarch64': mac,
+              },
+            };
+            fs.writeFileSync('latest.json', JSON.stringify(manifest, null, 2));
+            console.log('Manifest written for', tag);
+          "
+
+      - name: Upload latest.json to GitHub Release
+        uses: softprops/action-gh-release@v3
+        with:
+          files: latest.json
