@@ -387,7 +387,7 @@ function App() {
 
   const [encryptionWarning, setEncryptionWarning] = useState<{
     message: string;
-    onConfirm: () => void;
+    onConfirm?: () => void;
     onCancel: () => void;
   } | null>(null);
 
@@ -2690,10 +2690,16 @@ function App() {
             });
             await doSend(undefined, groupEnv);
           } catch {
-            await doSend();
+            setEncryptionWarning({
+              message: "Encryption failed. The message was not sent.",
+              onCancel: () => setEncryptionWarning(null),
+            });
           }
         } else {
-          await doSend();
+          setEncryptionWarning({
+            message: "Encryption failed. The message was not sent.",
+            onCancel: () => setEncryptionWarning(null),
+          });
         }
       }
       return;
@@ -2729,9 +2735,11 @@ function App() {
         recipientDhPubkeyHex: dhPubkey,
       });
       await doSend(envelope);
-    } catch (e) {
-      console.warn("Encryption failed, sending plaintext:", e);
-      await doSend();
+    } catch {
+      setEncryptionWarning({
+        message: "Encryption failed. The message was not sent.",
+        onCancel: () => setEncryptionWarning(null),
+      });
     }
   }
 
@@ -3852,8 +3860,12 @@ function App() {
             <div className="modal encryption-warning-modal">
               <p>{encryptionWarning.message}</p>
               <div className="modal-actions">
-                <button onClick={encryptionWarning.onConfirm}>Send anyway</button>
-                <button onClick={encryptionWarning.onCancel}>Cancel</button>
+                {encryptionWarning.onConfirm && (
+                  <button onClick={encryptionWarning.onConfirm}>Send anyway</button>
+                )}
+                <button onClick={encryptionWarning.onCancel}>
+                  {encryptionWarning.onConfirm ? "Cancel" : "Dismiss"}
+                </button>
               </div>
             </div>
           </div>
