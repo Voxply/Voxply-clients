@@ -33,6 +33,8 @@ jobs:
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
+        with:
+          components: rustfmt, clippy
 
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
@@ -53,6 +55,10 @@ jobs:
         working-directory: desktop/desktop
         run: npx tsc --noEmit
 
+      - name: vitest
+        working-directory: desktop/desktop
+        run: npm test
+
       - name: cargo fmt check
         working-directory: desktop
         run: cargo fmt --all -- --check
@@ -64,3 +70,7 @@ jobs:
       - name: Cargo check (Tauri Rust side)
         working-directory: desktop/desktop/src-tauri
         run: cargo check
+
+      - name: Cargo test
+        working-directory: desktop
+        run: cargo test --workspace
