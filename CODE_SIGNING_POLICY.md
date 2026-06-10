@@ -48,7 +48,7 @@ Voxply is a decentralised platform. The desktop client:
   joins.
 
 No personal information is transmitted without the user's direct action.
-Full design rationale is in the [threat model](https://github.com/Voxply/Voxply/blob/main/docs/docs/threat-model.md).
+Full design rationale is in the [threat model](https://github.com/Voxply/Voxply/blob/main/docs/threat-model.md).
 
 ## Third-party components
 
