@@ -1119,7 +1119,7 @@ mod wire_vector_tests {
 
     #[test]
     fn dm_envelope_signing_bytes_vector() {
-        let sb = crate::dm_envelope_signing_bytes(
+        let sb = crate::dm::dm_envelope_signing_bytes(
             DM_CONV_ID,
             DM_CIPHERTEXT_HEX,
             DM_NONCE_HEX,
@@ -1130,7 +1130,7 @@ mod wire_vector_tests {
 
     #[test]
     fn dm_envelope_signature_vector() {
-        let sb = crate::dm_envelope_signing_bytes(
+        let sb = crate::dm::dm_envelope_signing_bytes(
             DM_CONV_ID,
             DM_CIPHERTEXT_HEX,
             DM_NONCE_HEX,
@@ -1142,28 +1142,38 @@ mod wire_vector_tests {
 
     #[test]
     fn group_dm_envelope_signing_bytes_vector() {
-        let sb =
-            crate::group_envelope_signing_bytes(DM_CONV_ID, 1, 2, DM_CIPHERTEXT_HEX, DM_NONCE_HEX);
+        let sb = crate::dm::group_envelope_signing_bytes(
+            DM_CONV_ID,
+            1,
+            2,
+            DM_CIPHERTEXT_HEX,
+            DM_NONCE_HEX,
+        );
         assert_eq!(hex::encode(&sb), GROUP_DM_ENVELOPE_SIGNING_BYTES);
     }
 
     #[test]
     fn group_dm_envelope_signature_vector() {
-        let sb =
-            crate::group_envelope_signing_bytes(DM_CONV_ID, 1, 2, DM_CIPHERTEXT_HEX, DM_NONCE_HEX);
+        let sb = crate::dm::group_envelope_signing_bytes(
+            DM_CONV_ID,
+            1,
+            2,
+            DM_CIPHERTEXT_HEX,
+            DM_NONCE_HEX,
+        );
         let sig = master_key().sign(&sb);
         assert_eq!(hex::encode(sig.to_bytes()), GROUP_DM_ENVELOPE_SIG);
     }
 
     #[test]
     fn sender_key_dist_signing_bytes_vector() {
-        let sb = crate::sender_key_dist_signing_bytes(DM_CONV_ID, 1, &dist_recipients());
+        let sb = crate::dm::sender_key_dist_signing_bytes(DM_CONV_ID, 1, &dist_recipients());
         assert_eq!(hex::encode(&sb), SENDER_KEY_DIST_SIGNING_BYTES);
     }
 
     #[test]
     fn sender_key_dist_signature_vector() {
-        let sb = crate::sender_key_dist_signing_bytes(DM_CONV_ID, 1, &dist_recipients());
+        let sb = crate::dm::sender_key_dist_signing_bytes(DM_CONV_ID, 1, &dist_recipients());
         let sig = master_key().sign(&sb);
         assert_eq!(hex::encode(sig.to_bytes()), SENDER_KEY_DIST_SIG);
     }
