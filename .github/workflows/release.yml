@@ -144,64 +144,15 @@ jobs:
         working-directory: desktop/desktop
         run: npm ci
 
-      # Authenticode signing: SignPath submits the unsigned installer to the
-      # SignPath cloud HSM for EV signing, then we swap in the signed copy.
-      # Activates only when SIGNPATH_API_TOKEN is set. See docs/code-signing.md
+      # Windows Authenticode signing is deferred until the project has the
+      # popularity to qualify for (or justify paying for) a signing service —
+      # see docs/code-signing.md in the docs repo. Installers ship unsigned.
       - name: Tauri build
         working-directory: desktop/desktop
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         run: npx tauri build ${{ matrix.args }}
-
-      - name: Stage unsigned installer (Windows)
-        if: matrix.platform == 'windows-latest'
-        shell: pwsh
-        run: |
-          $installer = Get-ChildItem "desktop\target\release\bundle\nsis\*.exe" | Select-Object -First 1
-          if (-not $installer) { throw "No NSIS installer found" }
-          New-Item -ItemType Directory -Force "signing-input" | Out-Null
-          Copy-Item $installer.FullName "signing-input\voxply-setup.exe"
-          Write-Output "Staged: $($installer.FullName)"
-
-      - name: Upload unsigned installer for SignPath (Windows)
-        if: matrix.platform == 'windows-latest'
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
-        with:
-          name: unsigned-installer
-          path: signing-input/voxply-setup.exe
-          retention-days: 1
-
-      - name: Sign installer via SignPath (Windows)
-        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
-        uses: signpath/github-action-submit-signing-request@ced31329c0317e779dad2eec2a7c3bb46ea1343e # v1
-        with:
-          api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
-          organization-id: ${{ secrets.SIGNPATH_ORGANIZATION_ID }}
-          project-slug: voxply-desktop
-          signing-policy-slug: release-signing
-          artifact-configuration-slug: nsis-installer
-          github-artifact-name: unsigned-installer
-          wait-for-completion: true
-          output-artifact-name: signed-installer
-
-      - name: Swap in signed installer (Windows)
-        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
-        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
-        with:
-          name: signed-installer
-          path: signing-input
-
-      - name: Move signed installer into bundle dir (Windows)
-        if: matrix.platform == 'windows-latest' && secrets.SIGNPATH_API_TOKEN != ''
-        shell: pwsh
-        run: |
-          $bundleDir = "desktop\target\release\bundle\nsis"
-          $original = Get-ChildItem $bundleDir -Filter "*.exe" | Select-Object -First 1
-          if ($original) { Remove-Item $original.FullName }
-          Copy-Item "signing-input\voxply-setup.exe" "$bundleDir\voxply-setup.exe"
-          signtool verify /pa /v "$bundleDir\voxply-setup.exe"
-          Write-Output "Signed installer verified"
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3

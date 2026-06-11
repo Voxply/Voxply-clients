@@ -40,8 +40,8 @@ Windows (`.exe`), macOS (`.dmg`), Linux (`.AppImage`).
 
 **A note on installer warnings** — Voxply builds are reproducible from
 this public repository via GitHub Actions, but the installers are not
-yet code-signed (signing for a young open-source project is in
-progress — see [CODE_SIGNING_POLICY.md](CODE_SIGNING_POLICY.md)):
+code-signed yet (deferred until the project is big enough to qualify
+for an open-source signing program):
 
 - **Windows**: SmartScreen will warn about an unrecognized app. Click
   **More info → Run anyway**.
