@@ -1,8 +1,12 @@
 {
   "name": "@voxply/i18n",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
-  "description": "Strings and ICU i18n machinery",
-  "main": "src/index.ts",
-  "scripts": {}
+  "main": "index.ts",
+  "types": "index.ts",
+  "peerDependencies": {
+    "i18next": ">=23",
+    "i18next-icu": ">=2",
+    "react-i18next": ">=14"
+  }
 }

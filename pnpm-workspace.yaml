@@ -1,7 +1,7 @@
 packages:
   - 'packages/*'
-  - 'desktop'
-  - 'apps/web/web'
+  - 'apps/desktop'
+  - 'apps/web'
   - 'apps/android/voxply-desktop'
   - 'apps/android/voxply-web'
 
