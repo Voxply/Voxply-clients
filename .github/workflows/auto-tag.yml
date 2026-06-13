@@ -18,9 +18,9 @@ jobs:
       - name: Read version from tauri.conf.json
         id: ver
         run: |
-          VERSION=$(node -pe "require('./desktop/src-tauri/tauri.conf.json').version")
-          echo "version=v$VERSION" >> "$GITHUB_OUTPUT"
-          echo "Detected version: v$VERSION"
+          VERSION=$(node -pe "require('./apps/desktop/src-tauri/tauri.conf.json').version")
+          echo "version=desktop-v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Detected version: desktop-v$VERSION"
 
       - name: Check if tag already exists
         id: check

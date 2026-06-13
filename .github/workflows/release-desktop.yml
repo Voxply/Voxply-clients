@@ -1,9 +1,9 @@
-name: Release
+name: Release Desktop
 
 on:
   push:
     tags:
-      - "v*"
+      - "desktop-v*"
 
 jobs:
   changelog:
@@ -59,23 +59,14 @@ jobs:
       contents: write
 
     steps:
-      - name: Checkout desktop
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          path: desktop
-
-      - name: Checkout web (for i18n)
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          repository: Voxply/Voxply-web
-          path: web
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
 
       - name: Install Rust
         uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable
 
       - uses: Swatinem/rust-cache@42dc69e1aa15d09112580998cf2ef0119e2e91ae # v2
         with:
-          workspaces: desktop
+          workspaces: apps/desktop/src-tauri
 
       - name: Install Linux deps
         if: matrix.platform == 'ubuntu-22.04'
@@ -137,35 +128,36 @@ jobs:
           echo "OPUS_STATIC=1"                        >> "$GITHUB_ENV"
           echo "LIBOPUS_NO_PKG=1"                     >> "$GITHUB_ENV"
 
-      - name: Install Node
-        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
+      - uses: pnpm/action-setup@fe02b34f77f8bc703788d534f2ed8388f7c11065 # v4
+        with:
+          version: 9
+
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v4
         with:
           node-version: 22
-          cache: npm
-          cache-dependency-path: desktop/desktop/package-lock.json
+          cache: pnpm
 
       - name: Install JS deps
-        working-directory: desktop/desktop
-        run: npm ci
+        run: pnpm install --frozen-lockfile
 
       # Windows Authenticode signing is deferred until the project has the
-      # popularity to qualify for (or justify paying for) a signing service —
+      # popularity to qualify for (or justify paying for) a signing service --
       # see docs/code-signing.md in the docs repo. Installers ship unsigned.
       - name: Tauri build
-        working-directory: desktop/desktop
+        working-directory: apps/desktop
         env:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         # The updater overlay enables createUpdaterArtifacts (.sig + macOS
-        # .app.tar.gz) only in CI, so local builds don't require the signing key.
-        run: npx tauri build --config src-tauri/tauri.updater.conf.json ${{ matrix.args }}
+        # .app.tar.gz) only in CI, so local builds do not require the signing key.
+        run: pnpm tauri build --config src-tauri/tauri.updater.conf.json ${{ matrix.args }}
 
       - name: Upload to GitHub Release
         uses: softprops/action-gh-release@b4309332981a82ec1c5618f44dd2e27cc8bfbfda # v3
         with:
           fail_on_unmatched_files: true
           files: |
-            desktop/target/**/release/bundle/**/${{ matrix.artifact }}
+            target/**/release/bundle/**/${{ matrix.artifact }}
 
       - name: Upload macOS updater bundle to GitHub Release
         if: matrix.platform == 'macos-latest'
@@ -173,7 +165,7 @@ jobs:
         with:
           fail_on_unmatched_files: true
           files: |
-            desktop/target/**/release/bundle/macos/*.app.tar.gz
+            target/**/release/bundle/macos/*.app.tar.gz
 
       # Collect the updater signature and bundle URL for latest.json assembly.
       - name: Collect update metadata (Linux / macOS)
@@ -181,11 +173,11 @@ jobs:
         shell: bash
         run: |
           if [ "${{ matrix.platform }}" = "macos-latest" ]; then
-            SIG_FILE=$(find desktop/target -name "*.app.tar.gz.sig" 2>/dev/null | head -1)
-            BUNDLE=$(find desktop/target -name "*.app.tar.gz" ! -name "*.sig" 2>/dev/null | head -1)
+            SIG_FILE=$(find target -name "*.app.tar.gz.sig" 2>/dev/null | head -1)
+            BUNDLE=$(find target -name "*.app.tar.gz" ! -name "*.sig" 2>/dev/null | head -1)
           else
-            SIG_FILE=$(find desktop/target -name "*.AppImage.sig" 2>/dev/null | head -1)
-            BUNDLE=$(find desktop/target -name "*.AppImage" ! -name "*.sig" 2>/dev/null | head -1)
+            SIG_FILE=$(find target -name "*.AppImage.sig" 2>/dev/null | head -1)
+            BUNDLE=$(find target -name "*.AppImage" ! -name "*.sig" 2>/dev/null | head -1)
           fi
           FILENAME=$(basename "$BUNDLE")
           URL="https://github.com/$GITHUB_REPOSITORY/releases/download/$GITHUB_REF_NAME/$FILENAME"
@@ -199,8 +191,8 @@ jobs:
         if: matrix.platform == 'windows-latest'
         shell: pwsh
         run: |
-          $sigFile = Get-ChildItem -Path "desktop\target" -Recurse -Filter "*.exe.sig" | Select-Object -First 1
-          $exeFile = Get-ChildItem -Path "desktop\target" -Recurse -Filter "*.exe" |
+          $sigFile = Get-ChildItem -Path "target" -Recurse -Filter "*.exe.sig" | Select-Object -First 1
+          $exeFile = Get-ChildItem -Path "target" -Recurse -Filter "*.exe" |
             Where-Object { $_.Extension -eq ".exe" -and $_.Name -notlike "*.sig" } |
             Select-Object -First 1
           $signature = (Get-Content $sigFile.FullName -Raw).Trim()
@@ -250,7 +242,7 @@ jobs:
             const mac = JSON.parse(fs.readFileSync('meta/macos.json', 'utf8'));
             const tag = process.env.GITHUB_REF_NAME;
             const manifest = {
-              version: tag.replace(/^v/, ''),
+              version: tag.replace(/^desktop-v/, ''),
               notes: '',
               pub_date: new Date().toISOString(),
               platforms: {
