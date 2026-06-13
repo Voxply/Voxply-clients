@@ -4,6 +4,7 @@ export interface WsHandlers {
   onTyping?: (e: object) => void;
   onVoiceState?: (e: object) => void;
   onScreenShare?: (e: object) => void;
+  onScreenShareChunk?: (streamId: string, isInit: boolean, data: ArrayBuffer) => void;
   onStatusChange?: (connected: boolean, hubId: string) => void;
   onPin?: (e: object) => void;
   onPoll?: (e: object) => void;
@@ -21,6 +22,7 @@ export class HubWebSocket {
   private backoff = BACKOFF_INITIAL;
   private retryTimer: ReturnType<typeof setTimeout> | null = null;
   private consecutiveFailures = 0;
+  private pendingChunkEnvelope: { stream_id: string; is_init: boolean } | null = null;
 
   constructor(
     private hub_url: string,
@@ -41,6 +43,7 @@ export class HubWebSocket {
   private connect(): void {
     if (this.closed) return;
     this.ws = new WebSocket(this.wsUrl);
+    this.ws.binaryType = "arraybuffer";
 
     this.ws.onopen = () => {
       this.backoff = BACKOFF_INITIAL;
@@ -49,6 +52,17 @@ export class HubWebSocket {
     };
 
     this.ws.onmessage = (ev) => {
+      if (ev.data instanceof ArrayBuffer) {
+        if (this.pendingChunkEnvelope) {
+          this.handlers.onScreenShareChunk?.(
+            this.pendingChunkEnvelope.stream_id,
+            this.pendingChunkEnvelope.is_init,
+            ev.data,
+          );
+          this.pendingChunkEnvelope = null;
+        }
+        return;
+      }
       let msg: Record<string, unknown>;
       try {
         msg = JSON.parse(ev.data as string) as Record<string, unknown>;
@@ -59,11 +73,13 @@ export class HubWebSocket {
     };
 
     this.ws.onclose = () => {
+      this.pendingChunkEnvelope = null;
       this.handlers.onStatusChange?.(false, this.hub_id);
       if (!this.closed) this.scheduleReconnect();
     };
 
     this.ws.onerror = () => {
+      this.pendingChunkEnvelope = null;
       this.ws?.close();
     };
   }
@@ -79,11 +95,10 @@ export class HubWebSocket {
       this.handlers.onTyping?.(tagged);
     } else if (type === "voice_joined" || type === "voice_participant_joined" || type === "voice_participant_left" || type === "voice_participant_speaking" || type === "voice_roster_update") {
       this.handlers.onVoiceState?.(tagged);
-    } else if (
-      type === "screen_share_started" ||
-      type === "screen_share_chunk" ||
-      type === "screen_share_stopped"
-    ) {
+    } else if (type === "screen_share_chunk") {
+      const env = tagged as unknown as { stream_id: string; is_init: boolean };
+      this.pendingChunkEnvelope = { stream_id: env.stream_id, is_init: env.is_init };
+    } else if (type === "screen_share_started" || type === "screen_share_stopped") {
       this.handlers.onScreenShare?.(tagged);
     } else if (type === "message_pinned" || type === "message_unpinned") {
       this.handlers.onPin?.(tagged);

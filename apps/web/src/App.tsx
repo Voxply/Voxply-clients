@@ -25,6 +25,7 @@ import type {
   AllianceInfo,
   AllianceSharedChannel,
 } from "@shared/types";
+import type { ActiveStream } from "./types";
 import { HubSidebar } from "@components/HubSidebar";
 import { ChannelSidebar } from "@components/ChannelSidebar";
 import { ContentArea } from "@components/ContentArea";
@@ -359,6 +360,7 @@ export default function App() {
   const messagesContainerRef = useRef<HTMLOListElement | null>(null);
   const messageInputRef = useRef<HTMLInputElement | null>(null);
   const screenShareViewerRef = useRef<ScreenShareViewerRef | null>(null);
+  const [activeScreenShares, setActiveScreenShares] = useState<ActiveStream[]>([]);
 
   const loadingHub = useRef(false);
 
@@ -523,7 +525,24 @@ export default function App() {
     onTyping: (raw) => {
       receiveTyping(raw as Record<string, unknown>);
     },
-    onScreenShare: () => {},
+    onScreenShare: (raw) => {
+      const m = raw as Record<string, unknown>;
+      if (m._hub_id !== activeHubIdRef.current) return;
+      if (m.type === "screen_share_started") {
+        const ev = m as unknown as ActiveStream & { _hub_id: string };
+        setActiveScreenShares((prev) => {
+          if (prev.some((s) => s.stream_id === ev.stream_id)) return prev;
+          return [...prev, { stream_id: ev.stream_id, sharer_pubkey: ev.sharer_pubkey, kind: ev.kind, mime: ev.mime, has_audio: ev.has_audio }];
+        });
+      } else if (m.type === "screen_share_stopped") {
+        const streamId = m.stream_id as string;
+        setActiveScreenShares((prev) => prev.filter((s) => s.stream_id !== streamId));
+        screenShareViewerRef.current?.stopStream(streamId);
+      }
+    },
+    onScreenShareChunk: (streamId, isInit, data) => {
+      screenShareViewerRef.current?.appendChunk(streamId, isInit, data);
+    },
     onStatusChange: (connected, hubId) => {
       const hubName = hubsRef.current.find((h) => h.hub_id === hubId)?.hub_name ?? "hub";
       handleStatusChange(hubId, hubName, connected, setAssertiveAnnouncement);
@@ -1328,7 +1347,7 @@ export default function App() {
         onToast={() => {}}
         onError={() => {}}
         slashCommands={slashCommands}
-        activeScreenShares={[]}
+        activeScreenShares={activeScreenShares}
         screenShareViewerRef={screenShareViewerRef}
         assertiveAnnouncement={assertiveAnnouncement}
       />
