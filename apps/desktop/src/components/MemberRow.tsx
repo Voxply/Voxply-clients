@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import type { MemberAdminInfo, RoleInfo } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/utils";
+import { formatPubkey, formatRelative } from "@voxply/core";
 
 export function MemberRow({
   member,

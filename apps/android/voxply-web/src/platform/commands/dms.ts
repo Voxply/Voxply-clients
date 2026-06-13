@@ -1,4 +1,4 @@
-import { hexToBytes } from "@voxply/utils";
+import { hexToBytes, bytesToHex } from "@voxply/core";
 import { hubFetch, rawFetch } from "../http";
 import { activeSession, getSession } from "../session";
 import { loadIdentity } from "../../identity/store";
@@ -10,7 +10,7 @@ import {
   publicKeyHex,
   dhKeySigningBytes,
   type DmEnvelope,
-} from "../../identity/crypto";
+} from "@voxply/core";
 import type { Conversation, DmMessage, DmMessageFull, Attachment } from "@shared/types";
 
 export async function listConversations(): Promise<Conversation[]> {
@@ -164,7 +164,7 @@ export async function publishDhKey(): Promise<void> {
   const seedHex = identity.seed_hex;
   const myPubkeyHex = publicKeyHex(seedHex);
   const { dhPub } = dhKeypairFromSeed(seedHex);
-  const dhPubkeyHex = Array.from(dhPub, (b) => b.toString(16).padStart(2, "0")).join("");
+  const dhPubkeyHex = bytesToHex(dhPub);
 
   const sigMsg = dhKeySigningBytes(myPubkeyHex, dhPubkeyHex);
   const signatureHex = signBytes(sigMsg, seedHex);

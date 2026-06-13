@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PendingAllianceInvite } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 
 export function AllianceInvitesSection({ ownHubUrl }: { ownHubUrl: string }) {
   const [invites, setInvites] = useState<PendingAllianceInvite[]>([]);

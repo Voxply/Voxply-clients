@@ -1,6 +1,6 @@
 import React from "react";
 import type { DmMessage, Attachment, User, Conversation } from "../../types";
-import { formatPubkey, meAction, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/utils";
+import { formatPubkey, meAction, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/core";
 import { MessageContent } from "../MessageContent";
 import { MessageAttachments, PendingAttachments } from "../Attachments";
 import { TypingIndicator } from "../TypingIndicator";

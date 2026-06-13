@@ -1,6 +1,6 @@
 import React from "react";
 import type { User } from "../types";
-import { formatPubkey } from "@voxply/utils";
+import { formatPubkey } from "@voxply/core";
 
 interface Props {
   user: User;

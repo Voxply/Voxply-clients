@@ -18,7 +18,7 @@ import {
   type SavedHub,
 } from "../storage";
 import { loadIdentity, loadPairedState, hexToBytes, bytesToHex } from "../../identity/store";
-import { signBytes, publicKeyHex } from "../../identity/crypto";
+import { signBytes, publicKeyHex } from "@voxply/core";
 import { ed25519 } from "@noble/curves/ed25519";
 import type { Hub } from "@shared/types";
 

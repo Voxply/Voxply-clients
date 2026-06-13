@@ -1,2 +1,10 @@
 export { parseHubInput } from "./parseHubInput";
 export type { HubInputResult } from "./parseHubInput";
+export * from "./audio";
+export * from "./channels";
+export * from "./format";
+export * from "./hex";
+export * from "./recentEmoji";
+export * from "./useReconnectBackoff";
+export * from "./identity/crypto";
+export * from "./identity/recovery";

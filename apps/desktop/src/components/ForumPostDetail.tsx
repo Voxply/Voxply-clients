@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PostDetail, ReplyView, PostSummary, User } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 
 interface Props {
   postSummary: PostSummary;

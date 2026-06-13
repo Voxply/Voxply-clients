@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import type { Certification } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 
 interface Props {
   hubUrl: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { GameSession, InstalledGame } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 import {
   listGameSessions,
   createGameSession,

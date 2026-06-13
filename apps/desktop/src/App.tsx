@@ -58,7 +58,7 @@ import {
   flattenTree,
   descendantIds,
   computeDepth,
-} from "@voxply/utils";
+} from "@voxply/core";
 import { parseHubInput } from "@voxply/core";
 import { readFileAsB64 } from "./utils/files";
 import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";

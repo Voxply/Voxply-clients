@@ -2,7 +2,7 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { NamedProfile, User } from "../types";
 import { type ThemeId, type VoxplySkin, applySkinTokens, clearSkinTokens } from "../skinValidation";
-import { newProfileId } from "@voxply/utils";
+import { newProfileId } from "@voxply/core";
 import type { SettingsTab } from "../components/SettingsPage";
 
 interface UseSettingsProfileParams {

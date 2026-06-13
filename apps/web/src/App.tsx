@@ -8,7 +8,7 @@ import { useSettingsProfile } from "./hooks/useSettingsProfile";
 import { useFarmAdmin } from "./hooks/useFarmAdmin";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { flattenTree, descendantIds, computeDepth } from "@voxply/utils";
+import { flattenTree, descendantIds, computeDepth } from "@voxply/core";
 import { parseHubInput } from "@voxply/core";
 import type {
   Channel,
@@ -38,8 +38,8 @@ import { WelcomeScreenContainer } from "@components/WelcomeScreen";
 import { SettingsPage } from "@components/SettingsPage";
 import { UserContextMenu } from "@components/UserContextMenu";
 import { MobileShell } from "@components/MobileShell";
-import { buildChannelTree } from "@voxply/utils";
-import type { TreeNode } from "@voxply/utils";
+import { buildChannelTree } from "@voxply/core";
+import type { TreeNode } from "@voxply/core";
 import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import type { ScreenShareViewerRef } from "@components/ScreenShareViewer";
 import { listBotCommands, updateDmBlocks, fetchVoiceRoster } from "@platform";

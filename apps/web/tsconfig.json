@@ -23,9 +23,9 @@
       "@platform": ["./src/platform/index"],
       "@identity/*": ["./src/identity/*"],
       "@voxply/i18n": ["../i18n/index.ts"],
-      "@voxply/utils": ["../utils/index.ts"]
+      "@voxply/core": ["../packages/core/src/index.ts"]
     }
   },
-  "include": ["src", "../i18n", "../utils"],
+  "include": ["src", "../i18n"],
   "exclude": ["../i18n/check-coverage.ts"]
 }

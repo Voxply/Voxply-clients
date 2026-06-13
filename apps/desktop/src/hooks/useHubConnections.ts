@@ -1,6 +1,6 @@
 import { useState, type Dispatch, type SetStateAction } from "react";
 import { invoke } from "@tauri-apps/api/core";
-import { useReconnectBackoff } from "@voxply/utils";
+import { useReconnectBackoff } from "@voxply/core";
 
 export interface HubConnections {
   hubConnected: Record<string, boolean>;

@@ -5,7 +5,7 @@
 // field in src-tauri or server/voxply-hub means a rename here too.
 
 // Channel is shared with the channel-tree helpers in @voxply/utils.
-export type { Channel } from "@voxply/utils";
+export type { Channel } from "@voxply/core";
 
 export interface HubIcon {
   id: string;

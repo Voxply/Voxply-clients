@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type { User, PublicHubProfile } from "../types";
-import { formatPubkey } from "@voxply/utils";
+import { formatPubkey } from "@voxply/core";
 
 interface Props {
   menu: { x: number; y: number; user: User };

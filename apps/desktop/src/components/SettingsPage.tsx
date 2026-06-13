@@ -2,7 +2,7 @@ import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type { Hub, NamedProfile } from "../types";
-import { formatPubkey } from "@voxply/utils";
+import { formatPubkey } from "@voxply/core";
 import { AudioProfileSection } from "./AudioProfileSection";
 import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";

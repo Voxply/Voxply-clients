@@ -1,6 +1,6 @@
 import React from "react";
 import type { Message, Attachment, User } from "../../types";
-import { formatPubkey } from "@voxply/utils";
+import { formatPubkey } from "@voxply/core";
 import { EmojiPicker } from "../EmojiPicker";
 import { PendingAttachments } from "../Attachments";
 

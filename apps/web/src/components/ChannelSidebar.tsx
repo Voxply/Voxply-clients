@@ -21,7 +21,7 @@ import type {
   AllianceSharedChannel,
   Conversation,
 } from "../types";
-import type { TreeNode, FlatNode } from "@voxply/utils";
+import type { TreeNode, FlatNode } from "@voxply/core";
 import { PhoneOffIcon, ChannelIcon, PingIcon } from "./Icons";
 import { SortableCategoryItem, SortableChannelItem } from "./SortableItems";
 import { HoverSubmenu } from "./HoverSubmenu";

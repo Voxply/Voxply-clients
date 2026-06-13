@@ -8,7 +8,7 @@
 //   timestamp  : 1_700_000_000  (unix seconds)
 import { describe, it, expect } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex } from "./store";
+import { bytesToHex } from "../hex";
 import {
   dhKeypairFromSeed,
   dhKeySigningBytes,

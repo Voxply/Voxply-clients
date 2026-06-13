@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Message, User, AllianceSharedChannel } from "../../types";
-import { formatPubkey, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/utils";
+import { formatPubkey, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/core";
 import { Avatar } from "../Avatar";
 import { MessageContent } from "../MessageContent";
 import { MessageAttachments } from "../Attachments";

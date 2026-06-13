@@ -11,7 +11,7 @@ import {
   formatDayLabel,
   formatFullTimestamp,
   formatRelative,
-} from "@voxply/utils";
+} from "@voxply/core";
 import { Avatar } from "../Avatar";
 import { MessageContent } from "../MessageContent";
 import { MessageAttachments } from "../Attachments";

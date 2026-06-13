@@ -1,7 +1,7 @@
 import React, { useCallback, useRef, useState } from "react";
 import type { User } from "../types";
 import { Avatar } from "./Avatar";
-import { formatPubkey } from "@voxply/utils";
+import { formatPubkey } from "@voxply/core";
 
 export function UserListGrouped({
   users,

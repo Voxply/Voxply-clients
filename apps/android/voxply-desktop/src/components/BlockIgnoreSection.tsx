@@ -1,6 +1,6 @@
 import React from "react";
 import type { BlockEntry, IgnoreEntry } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 
 interface Props {
   blockedUsers: BlockEntry[];

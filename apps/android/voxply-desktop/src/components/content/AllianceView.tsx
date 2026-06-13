@@ -1,6 +1,6 @@
 import React from "react";
 import type { Message, AllianceSharedChannel } from "../../types";
-import { formatPubkey, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/utils";
+import { formatPubkey, colorForKey, formatFullTimestamp, formatRelative } from "@voxply/core";
 import { Avatar } from "../Avatar";
 import { MessageContent } from "../MessageContent";
 import { MessageAttachments } from "../Attachments";

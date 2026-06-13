@@ -9,7 +9,7 @@
 //   timestamp  : 1_700_000_000  (unix seconds)
 import { describe, it, expect } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex } from "@voxply/utils";
+import { bytesToHex } from "@voxply/core";
 import {
   offerSigningBytes,
   subkeyCertSigningBytes,
@@ -19,7 +19,7 @@ import {
   dhKeypairFromSeed,
   dhKeySigningBytes,
   dmEnvelopeSigningBytes,
-} from "./crypto";
+} from "@voxply/core";
 
 const TS = 1_700_000_000;
 

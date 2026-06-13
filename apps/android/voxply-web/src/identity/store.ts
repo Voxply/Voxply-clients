@@ -1,6 +1,6 @@
 import { openDB, type IDBPDatabase } from "idb";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex } from "@voxply/utils";
+import { bytesToHex } from "@voxply/core";
 
 export interface IdentityRecord {
   id: "main";
@@ -68,7 +68,7 @@ export async function generateIdentity(): Promise<IdentityRecord> {
 
 // Hex helpers live in the shared package; re-exported here because the
 // identity modules historically import them from the store.
-export { bytesToHex, hexToBytes } from "@voxply/utils";
+export { bytesToHex, hexToBytes } from "@voxply/core";
 
 export async function loadPairedState(): Promise<PairedState | null> {
   const db = await getDb();

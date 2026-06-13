@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { CertIssuance, CertAdmissionSettings } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/utils";
+import { formatPubkey, formatRelative } from "@voxply/core";
 import {
   listCertIssuances,
   getCertSettings,

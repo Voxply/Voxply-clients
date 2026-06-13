@@ -1,4 +1,4 @@
-import { hexToBytes } from "@voxply/utils";
+import { hexToBytes } from "@voxply/core";
 import { rawFetch, hubFetch } from "../http";
 import {
   getSession,
@@ -19,7 +19,7 @@ import {
   type SavedHub,
 } from "../storage";
 import { loadIdentity } from "../../identity/store";
-import { signBytes, publicKeyHex } from "../../identity/crypto";
+import { signBytes, publicKeyHex } from "@voxply/core";
 import type { Hub } from "@shared/types";
 
 interface InfoResponse {

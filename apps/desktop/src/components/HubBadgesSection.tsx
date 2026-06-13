@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { HubBadge, PendingBadgeOffer } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 
 export function HubBadgesSection() {
   const [accepted, setAccepted] = useState<(HubBadge & { id: string })[]>([]);

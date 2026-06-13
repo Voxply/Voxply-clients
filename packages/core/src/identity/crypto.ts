@@ -3,7 +3,7 @@ import { hkdf } from "@noble/hashes/hkdf";
 import { sha256 } from "@noble/hashes/sha256";
 import { gcm } from "@noble/ciphers/aes";
 import { ed25519, x25519 } from "@noble/curves/ed25519";
-import { hexToBytes, bytesToHex } from "./store";
+import { hexToBytes, bytesToHex } from "../hex";
 
 export interface DmEnvelope {
   sender_pubkey: string;

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import type { PostDetail, ReplyView } from "../types";
-import { formatRelative } from "@voxply/utils";
+import { formatRelative } from "@voxply/core";
 import {
   forumGetPost,
   forumCreateReply,

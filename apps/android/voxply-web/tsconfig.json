@@ -10,15 +10,15 @@
     "skipLibCheck": true,
     "types": ["vite/client"],
     "paths": {
+      "react": ["./node_modules/@types/react/index.d.ts"],
       "@components/*": ["./src/components/*"],
       "@shared/types": ["./src/types"],
       "@shared/utils/*": ["./src/utils/*"],
       "@shared/hooks/*": ["./src/hooks/*"],
       "@shared/constants": ["./src/constants"],
       "@platform": ["./src/platform/index"],
-      "@identity/*": ["./src/identity/*"],
-      "@voxply/utils": ["./utils/index.ts"]
+      "@identity/*": ["./src/identity/*"]
     }
   },
-  "include": ["src", "utils"]
+  "include": ["src"]
 }

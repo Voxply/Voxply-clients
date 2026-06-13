@@ -2,7 +2,7 @@ import { CSSProperties, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import { EMOJI_CATALOG } from "../constants";
-import { loadRecentEmojis, pushRecentEmoji } from "@voxply/utils";
+import { loadRecentEmojis, pushRecentEmoji } from "@voxply/core";
 import { FocusTrap } from "./FocusTrap";
 
 const POPUP_HEIGHT = 320;

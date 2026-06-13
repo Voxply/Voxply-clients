@@ -8,7 +8,7 @@ import type {
   PendingUser,
   RoleInfo,
 } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/utils";
+import { formatPubkey, formatRelative } from "@voxply/core";
 import { ImagePicker } from "./ImagePicker";
 import { InvitesSection } from "./InvitesSection";
 import { MemberRow } from "./MemberRow";
