@@ -32,8 +32,8 @@ export class VoiceWsSession {
   ) {}
 
   async start(): Promise<void> {
-    this.encoder = new OpusScript(48000, 1, OpusScript.Application.VOIP) as unknown as OpusCodec;
-    this.decoder = new OpusScript(48000, 1, OpusScript.Application.VOIP) as unknown as OpusCodec;
+    this.encoder = new OpusScript(48000, 1, OpusScript.Application.VOIP, { wasm: false }) as unknown as OpusCodec;
+    this.decoder = new OpusScript(48000, 1, OpusScript.Application.VOIP, { wasm: false }) as unknown as OpusCodec;
 
     this.mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
