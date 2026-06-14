@@ -5,7 +5,7 @@ import { resolve } from "path";
 export default defineConfig({
   plugins: [react()],
   optimizeDeps: {
-    exclude: ["opusscript"],
+    include: ["opusscript"],
   },
   assetsInclude: ["**/*.wasm"],
   resolve: {
