@@ -58,7 +58,10 @@ pub(crate) async fn list_capture_sources() -> Result<Vec<CaptureSource>, String>
         dyn_img
             .write_to(&mut std::io::Cursor::new(&mut buf), ImageFormat::Png)
             .map_err(|e| e.to_string())?;
-        let id = win.id().map(|n| format!("window:{}", n)).unwrap_or_default();
+        let id = win
+            .id()
+            .map(|n| format!("window:{}", n))
+            .unwrap_or_default();
         sources.push(CaptureSource {
             id,
             name: title,
