@@ -28,7 +28,11 @@ pub(crate) async fn list_capture_sources() -> Result<Vec<CaptureSource>, String>
             .map_err(|e| e.to_string())?;
         let name = {
             let n = monitor.name();
-            if n.is_empty() { format!("Screen {}", idx) } else { n.to_string() }
+            if n.is_empty() {
+                format!("Screen {}", idx)
+            } else {
+                n.to_string()
+            }
         };
         sources.push(CaptureSource {
             id: format!("screen:{}:0", idx),
