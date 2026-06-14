@@ -26,9 +26,10 @@ pub(crate) async fn list_capture_sources() -> Result<Vec<CaptureSource>, String>
         dyn_img
             .write_to(&mut std::io::Cursor::new(&mut buf), ImageFormat::Png)
             .map_err(|e| e.to_string())?;
+        let name = monitor.name().unwrap_or_else(|_| format!("Screen {}", idx));
         sources.push(CaptureSource {
             id: format!("screen:{}:0", idx),
-            name: monitor.name().to_string(),
+            name,
             kind: "screen".to_string(),
             thumbnail_b64: B64.encode(&buf),
         });
@@ -37,10 +38,10 @@ pub(crate) async fn list_capture_sources() -> Result<Vec<CaptureSource>, String>
     // Windows
     let windows = xcap::Window::all().map_err(|e| e.to_string())?;
     for win in windows {
-        if win.is_minimized() {
+        if win.is_minimized().unwrap_or(false) {
             continue;
         }
-        let title = win.title().to_string();
+        let title = win.title().unwrap_or_default();
         if title.is_empty() {
             continue;
         }
@@ -57,8 +58,9 @@ pub(crate) async fn list_capture_sources() -> Result<Vec<CaptureSource>, String>
         dyn_img
             .write_to(&mut std::io::Cursor::new(&mut buf), ImageFormat::Png)
             .map_err(|e| e.to_string())?;
+        let id = win.id().map(|n| format!("window:{}", n)).unwrap_or_default();
         sources.push(CaptureSource {
-            id: format!("window:{}", win.id()),
+            id,
             name: title,
             kind: "window".to_string(),
             thumbnail_b64: B64.encode(&buf),
