@@ -219,6 +219,7 @@ export default function App() {
   const [createChannelCtx, setCreateChannelCtx] = useState<{ parentId: string | null; isCategory: boolean } | null>(null);
   const [createChannelLoading, setCreateChannelLoading] = useState(false);
   const [createChannelError, setCreateChannelError] = useState<string | null>(null);
+  const [channelCtxMenu, setChannelCtxMenu] = useState<{ channel: Channel; x: number; y: number } | null>(null);
 
   // === Hub data ===
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -1456,7 +1457,7 @@ export default function App() {
         onOpenHubAdminInvites={() => { void openHubAdmin(); setHubAdminTab("invites"); }}
         onOpenCreateChannel={(parentId, isCategory) => { setCreateChannelCtx({ parentId, isCategory }); setCreateChannelError(null); }}
         onSelectChannel={handleSelectChannel}
-        onChannelContextMenu={() => {}}
+        onChannelContextMenu={(e, channel) => { e.preventDefault(); setChannelCtxMenu({ channel, x: e.clientX, y: e.clientY }); }}
         onVoiceJoin={(ch) => ch && void handleVoiceJoin(ch)}
         onVoiceLeave={handleVoiceLeave}
         onSelectAllianceChannel={() => {}}
@@ -1567,8 +1568,8 @@ export default function App() {
         }}
         onKeyDown={handleKeyDown}
         onOpenImage={() => {}}
-        onToast={() => {}}
-        onError={() => {}}
+        onToast={(msg) => showHubError(msg)}
+        onError={(msg) => showHubError(typeof msg === "string" ? msg : String((msg as Record<string, unknown>).message ?? msg))}
         slashCommands={slashCommands}
         activeScreenShares={activeScreenShares}
         screenShareViewerRef={screenShareViewerRef}
@@ -1646,6 +1647,36 @@ export default function App() {
           onSubmit={handleCreateChannel}
           onClose={() => { setCreateChannelCtx(null); setCreateChannelError(null); }}
         />
+      )}
+
+      {channelCtxMenu && (
+        <div
+          className="context-menu-overlay"
+          onClick={() => setChannelCtxMenu(null)}
+          onContextMenu={(e) => { e.preventDefault(); setChannelCtxMenu(null); }}
+        >
+          <div
+            className="context-menu"
+            style={{ top: channelCtxMenu.y, left: channelCtxMenu.x }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {isAdmin && channelCtxMenu.channel.is_category && (
+              <button className="context-menu-item" onClick={() => { const ch = channelCtxMenu; setChannelCtxMenu(null); setCreateChannelCtx({ parentId: ch.channel.id, isCategory: false }); setCreateChannelError(null); }}>
+                Create channel in "{channelCtxMenu.channel.name}"
+              </button>
+            )}
+            {isAdmin && (
+              <button className="context-menu-item" onClick={() => { setChannelCtxMenu(null); setCreateChannelCtx({ parentId: null, isCategory: false }); setCreateChannelError(null); }}>
+                Create channel
+              </button>
+            )}
+            {isAdmin && (
+              <button className="context-menu-item" onClick={() => { setChannelCtxMenu(null); setCreateChannelCtx({ parentId: null, isCategory: true }); setCreateChannelError(null); }}>
+                Create category
+              </button>
+            )}
+          </div>
+        </div>
       )}
     </div>
   );

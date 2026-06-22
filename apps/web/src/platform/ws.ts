@@ -91,7 +91,7 @@ export class HubWebSocket {
   private dispatch(msg: Record<string, unknown>): void {
     const tagged: Record<string, unknown> = { ...msg, _hub_id: this.hub_id };
     const type = tagged.type as string | undefined;
-    if (type === "message" || type === "message_edited" || type === "message_deleted" || type === "reactions_updated") {
+    if (type === "message" || type === "message_edited" || type === "message_deleted" || type === "reactions_updated" || type === "forum_event") {
       this.handlers.onMessage?.(tagged);
     } else if (type === "dm") {
       this.handlers.onDm?.(tagged);
@@ -99,12 +99,23 @@ export class HubWebSocket {
       this.handlers.onDmMemberChanged?.(tagged);
     } else if (type === "typing" || type === "dm_typing") {
       this.handlers.onTyping?.(tagged);
-    } else if (type === "voice_joined" || type === "voice_participant_joined" || type === "voice_participant_left" || type === "voice_participant_speaking" || type === "voice_roster_update") {
+    } else if (
+      type === "voice_joined" || type === "voice_participant_joined" || type === "voice_participant_left" ||
+      type === "voice_participant_speaking" || type === "voice_roster_update" ||
+      type === "voice_whisper_started" || type === "voice_whisper_stopped" ||
+      type === "video_participant_enabled" || type === "video_participant_disabled" || type === "video_participants" ||
+      type === "video_offer_in" || type === "video_answer_in" || type === "video_ice_in"
+    ) {
       this.handlers.onVoiceState?.(tagged);
     } else if (type === "screen_share_chunk") {
       const env = tagged as unknown as { stream_id: string; is_init: boolean };
       this.pendingChunkEnvelope = { stream_id: env.stream_id, is_init: env.is_init };
-    } else if (type === "screen_share_started" || type === "screen_share_stopped") {
+    } else if (
+      type === "screen_share_started" || type === "screen_share_stopped" ||
+      type === "screen_share_offer_in" || type === "screen_share_answer_in" || type === "screen_share_ice_in" ||
+      type === "screen_share_viewer_joined" || type === "screen_share_viewer_left" ||
+      type === "stream_subscribed" || type === "stream_subscription_ended" || type === "hub_streams"
+    ) {
       this.handlers.onScreenShare?.(tagged);
     } else if (type === "message_pinned" || type === "message_unpinned") {
       this.handlers.onPin?.(tagged);
