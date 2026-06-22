@@ -810,7 +810,7 @@ export default function App() {
 
   // === Channel / messages ===
 
-  async function handleCreateChannel(name: string, channelType: string, description: string) {
+  async function handleCreateChannel(name: string, channelType: string, isCategory: boolean, description: string) {
     if (!createChannelCtx) return;
     setCreateChannelLoading(true);
     setCreateChannelError(null);
@@ -821,8 +821,8 @@ export default function App() {
         body: JSON.stringify({
           name,
           parent_id: createChannelCtx.parentId ?? undefined,
-          is_category: createChannelCtx.isCategory,
-          channel_type: createChannelCtx.isCategory ? undefined : channelType,
+          is_category: isCategory,
+          channel_type: isCategory ? undefined : channelType,
           description: description || undefined,
         }),
       });
@@ -1639,7 +1639,7 @@ export default function App() {
 
       {createChannelCtx && (
         <CreateChannelModal
-          isCategory={createChannelCtx.isCategory}
+          initialIsCategory={createChannelCtx.isCategory}
           parentId={createChannelCtx.parentId}
           parentName={createChannelCtx.parentId ? (channels.find((c) => c.id === createChannelCtx.parentId)?.name ?? null) : null}
           loading={createChannelLoading}
