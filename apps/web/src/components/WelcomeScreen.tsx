@@ -18,7 +18,6 @@ interface WelcomeScreenProps {
   error: string | null;
   onJoin: () => void;
   onBrowse?: () => void;
-  onDismiss: () => void;
   homeHubHint?: string;
 }
 
@@ -30,7 +29,6 @@ export function WelcomeScreen({
   error,
   onJoin,
   onBrowse,
-  onDismiss,
   homeHubHint,
 }: WelcomeScreenProps) {
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -134,10 +132,6 @@ export function WelcomeScreen({
         </ul>
       </details>
 
-      <button className="welcome-settings-link muted btn-ghost" onClick={onDismiss} style={{ fontSize: "var(--text-sm)" }}>
-        Skip for now
-      </button>
-
       {error && <div className="error" style={{ marginTop: 12, color: "var(--danger)" }}>{error}</div>}
     </div>
   );
@@ -147,11 +141,10 @@ export function WelcomeScreen({
 interface WelcomeScreenContainerProps {
   wsHandlers: WsHandlers;
   onHubAdded: (hub: Hub) => void;
-  onDismiss: () => void;
   initialHubUrl?: string;
 }
 
-export function WelcomeScreenContainer({ wsHandlers, onHubAdded, onDismiss, initialHubUrl }: WelcomeScreenContainerProps) {
+export function WelcomeScreenContainer({ wsHandlers, onHubAdded, initialHubUrl }: WelcomeScreenContainerProps) {
   const [hubUrl, setHubUrl] = useState(initialHubUrl ?? "");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -188,7 +181,6 @@ export function WelcomeScreenContainer({ wsHandlers, onHubAdded, onDismiss, init
       loading={loading}
       error={error}
       onJoin={handleJoin}
-      onDismiss={onDismiss}
       homeHubHint={initialHubUrl}
     />
   );

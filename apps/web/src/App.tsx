@@ -337,9 +337,6 @@ export default function App() {
   // === New web-only UI state ===
   const [showDiscover, setShowDiscover] = useState(false);
   const [showSearchBar, setShowSearchBar] = useState(false);
-  const [showWelcome, setShowWelcome] = useState<boolean>(() => {
-    try { return localStorage.getItem("voxply.seenWelcome") !== "1"; } catch { return true; }
-  });
   const [userContextMenu, setUserContextMenu] = useState<{
     pubkey: string;
     displayName: string | null;
@@ -1251,20 +1248,14 @@ export default function App() {
         <KeyboardShortcuts onClose={() => setShowKeyboardShortcuts(false)} />
       )}
 
-      {showWelcome && hubs.length === 0 && (
+      {hubs.length === 0 && (
         <div style={{ position: "fixed", inset: 0, zIndex: 9000, background: "var(--bg, #1a1a2e)", overflow: "auto" }}>
           <WelcomeScreenContainer
             wsHandlers={stableHandlers}
             onHubAdded={(hub) => {
               setHubs(listHubs());
               setActiveHubIdState(hub.hub_id);
-              setShowWelcome(false);
-              try { localStorage.setItem("voxply.seenWelcome", "1"); } catch {}
               void loadHubData();
-            }}
-            onDismiss={() => {
-              setShowWelcome(false);
-              try { localStorage.setItem("voxply.seenWelcome", "1"); } catch {}
             }}
             initialHubUrl={homeHubUrl}
           />
