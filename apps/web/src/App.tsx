@@ -30,6 +30,7 @@ import { HubSidebar } from "@components/HubSidebar";
 import { ChannelSidebar } from "@components/ChannelSidebar";
 import { ContentArea } from "@components/ContentArea";
 import { AddHubModal } from "@components/AddHubModal";
+import { CreateChannelModal } from "@components/CreateChannelModal";
 import { FarmSettingsPage } from "@components/FarmSettingsPage";
 import { CreateHubWizard } from "@components/CreateHubWizard";
 import { KeyboardShortcuts } from "@voxply/ui";
@@ -215,6 +216,9 @@ export default function App() {
   const [addHubError, setAddHubError] = useState<string | null>(null);
   const [showAddHub, setShowAddHub] = useState(false);
   const [homeHubUrl, setHomeHubUrl] = useState<string | undefined>(undefined);
+  const [createChannelCtx, setCreateChannelCtx] = useState<{ parentId: string | null; isCategory: boolean } | null>(null);
+  const [createChannelLoading, setCreateChannelLoading] = useState(false);
+  const [createChannelError, setCreateChannelError] = useState<string | null>(null);
 
   // === Hub data ===
   const [channels, setChannels] = useState<Channel[]>([]);
@@ -804,6 +808,31 @@ export default function App() {
   }
 
   // === Channel / messages ===
+
+  async function handleCreateChannel(name: string, channelType: string, description: string) {
+    if (!createChannelCtx) return;
+    setCreateChannelLoading(true);
+    setCreateChannelError(null);
+    try {
+      await hubFetch("/channels", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          parent_id: createChannelCtx.parentId ?? undefined,
+          is_category: createChannelCtx.isCategory,
+          channel_type: createChannelCtx.isCategory ? undefined : channelType,
+          description: description || undefined,
+        }),
+      });
+      setCreateChannelCtx(null);
+      hubFetch("/channels").then((r) => r.json() as Promise<Channel[]>).then(setChannels).catch(() => {});
+    } catch (e) {
+      setCreateChannelError(e instanceof HubApiError ? e.message : String(e));
+    } finally {
+      setCreateChannelLoading(false);
+    }
+  }
 
   async function handleSelectChannel(ch: Channel) {
     setSelectedChannel(ch);
@@ -1425,7 +1454,7 @@ export default function App() {
         onRemoveHub={handleRemoveHub}
         onOpenHubAdmin={() => void openHubAdmin()}
         onOpenHubAdminInvites={() => { void openHubAdmin(); setHubAdminTab("invites"); }}
-        onOpenCreateChannel={() => {}}
+        onOpenCreateChannel={(parentId, isCategory) => { setCreateChannelCtx({ parentId, isCategory }); setCreateChannelError(null); }}
         onSelectChannel={handleSelectChannel}
         onChannelContextMenu={() => {}}
         onVoiceJoin={(ch) => ch && void handleVoiceJoin(ch)}
@@ -1604,6 +1633,18 @@ export default function App() {
           error={addHubError}
           onAdd={handleAddHub}
           onClose={() => { setShowAddHub(false); setHubPreview({ state: "idle" }); setAddHubError(null); }}
+        />
+      )}
+
+      {createChannelCtx && (
+        <CreateChannelModal
+          isCategory={createChannelCtx.isCategory}
+          parentId={createChannelCtx.parentId}
+          parentName={createChannelCtx.parentId ? (channels.find((c) => c.id === createChannelCtx.parentId)?.name ?? null) : null}
+          loading={createChannelLoading}
+          error={createChannelError}
+          onSubmit={handleCreateChannel}
+          onClose={() => { setCreateChannelCtx(null); setCreateChannelError(null); }}
         />
       )}
     </div>
