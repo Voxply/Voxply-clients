@@ -21,7 +21,6 @@ import type {
   AllianceInfo,
   AllianceSharedChannel,
   ActiveStream,
-  InstalledGame,
 } from "@shared/types";
 import { HubSidebar } from "@components/HubSidebar";
 import { ChannelSidebar } from "@components/ChannelSidebar";
@@ -184,7 +183,6 @@ export default function App() {
   const [meInfo, setMeInfo] = useState<MeInfo | null>(null);
   const [voicePartByChannel, setVoicePartByChannel] = useState<Record<string, VoiceParticipant[]>>({});
   const [voiceActiveUsers] = useState<Set<string>>(new Set());
-  const [installedGames, setInstalledGames] = useState<InstalledGame[]>([]);
 
   // === View ===
   const [view, setView] = useState<View>("channels");
@@ -427,19 +425,17 @@ export default function App() {
     if (loadingHub.current) return;
     loadingHub.current = true;
     try {
-      const [ch, usr, me, convs, games, allianceResult] = await Promise.allSettled([
+      const [ch, usr, me, convs, allianceResult] = await Promise.allSettled([
         hubFetch("/channels").then((r) => r.json() as Promise<Channel[]>),
         hubFetch("/users").then((r) => r.json() as Promise<User[]>),
         hubFetch("/me").then((r) => r.json() as Promise<MeInfo>),
         hubFetch("/conversations").then((r) => r.json() as Promise<Conversation[]>),
-        hubFetch("/hub/games").then((r) => r.json() as Promise<InstalledGame[]>).catch(() => [] as InstalledGame[]),
         hubFetch("/alliances").then((r) => r.json() as Promise<AllianceInfo[]>).catch(() => [] as AllianceInfo[]),
       ]);
       if (ch.status === "fulfilled") setChannels(ch.value);
       if (usr.status === "fulfilled") setUsers(usr.value);
       if (me.status === "fulfilled") setMeInfo(me.value);
       if (convs.status === "fulfilled") setConversations(convs.value);
-      if (games.status === "fulfilled") setInstalledGames(games.value);
       if (allianceResult.status === "fulfilled") alliances.setUserAlliances(allianceResult.value);
     } finally {
       loadingHub.current = false;
@@ -817,7 +813,6 @@ export default function App() {
         voiceChannelId={voiceChannelId}
         onVoiceJoin={() => channelMsgs.selectedChannel && void handleVoiceJoin(channelMsgs.selectedChannel)}
         onVoiceLeave={() => void handleVoiceLeave()}
-        installedGames={installedGames}
         myAvatar={meInfo?.avatar ?? null}
         inputText={channelMsgs.inputText}
         typingByKey={typingByKey}

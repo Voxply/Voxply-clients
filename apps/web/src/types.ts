@@ -493,13 +493,6 @@ export interface BotDetailInfo extends BotAdminInfo {
   commands: BotSlashCommandInfo[];
 }
 
-export interface InstalledGame {
-  id: string;
-  name: string;
-  entry_url: string;
-  description: string | null;
-  thumbnail_url: string | null;
-}
 
 // ---- Bot message types ----
 
@@ -757,55 +750,6 @@ export interface PendingBadgeOffer {
   expires_at: number | null;
   signature: string;
   received_at: number;
-}
-
-// ---- Gaming (admin / sessions) ----
-
-export interface InstalledGameAdmin {
-  id: string;
-  name: string;
-  entry_url: string;
-  description: string | null;
-  thumbnail_url: string | null;
-  author: string | null;
-  version: string | null;
-  installed_by: string;
-  installed_at: number;
-  permissions: string[];
-  channel_scope: string[];
-}
-
-export interface GameManifest {
-  name: string;
-  entry_url: string;
-  id?: string;
-  version?: string;
-  description?: string | null;
-  thumbnail_url?: string | null;
-  author?: string | null;
-  min_players?: number;
-  max_players?: number;
-}
-
-export interface GamePlayer {
-  pubkey: string;
-  display_name: string | null;
-  joined_at: number;
-  connected: boolean;
-}
-
-export type GameSessionStatus = "lobby" | "in_progress" | "ended" | "abandoned";
-
-export interface GameSession {
-  session_id: string;
-  game_id: string;
-  channel_id: string;
-  host_pubkey: string;
-  status: GameSessionStatus;
-  players: GamePlayer[];
-  max_players: number;
-  created_at: number;
-  last_event_at: number;
 }
 
 // ---- Hub Certifications ----

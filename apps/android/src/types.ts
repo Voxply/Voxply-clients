@@ -489,16 +489,6 @@ export interface ExternalBotInviteResult {
   pubkey: string;
 }
 
-// ---- Games ----
-
-export interface InstalledGame {
-  id: string;
-  name: string;
-  entry_url: string;
-  description: string | null;
-  thumbnail_url: string | null;
-}
-
 // ---- Forum ----
 
 export interface PostSummary {
@@ -561,26 +551,6 @@ export interface AdminGame {
   installed_at: number;
   capabilities: string[];
   channel_scope: string[];
-}
-
-// ---- Gaming Tier 2 ----
-
-export interface GameSession {
-  session_id: string;
-  game_id: string;
-  channel_id: string;
-  host_pubkey: string;
-  status: "lobby" | "in_progress" | "ended" | "abandoned";
-  players: GamePlayer[];
-  max_players: number;
-  created_at: number;
-}
-
-export interface GamePlayer {
-  pubkey: string;
-  display_name: string | null;
-  joined_at: number;
-  connected: boolean;
 }
 
 // ---- Hub certifications ----

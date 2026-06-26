@@ -9,7 +9,6 @@ import type {
 } from "../types";
 import { formatPubkey, formatRelative } from "@voxply/core";
 import { ServerTagsSection } from "./ServerTagsSection";
-import { GamesAdminSection } from "./GamesAdminSection";
 import { CertificationsSection } from "./CertificationsSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
 import { WebhooksSection } from "./WebhooksSection";
@@ -26,7 +25,6 @@ export type HubAdminTab =
   | "external-bots"
   | "invites"
   | "integrations"
-  | "games"
   | "certifications"
   | "recovery";
 
@@ -114,7 +112,6 @@ export function HubAdminPage(props: HubAdminPageProps) {
     { id: "invites", label: "Invites" },
     { id: "integrations", label: "Integrations" },
     { id: "external-bots", label: "External Bots" },
-    { id: "games", label: "Games" },
     { id: "certifications", label: "Certifications" },
     { id: "recovery", label: "Recovery" },
   ];
@@ -351,10 +348,6 @@ export function HubAdminPage(props: HubAdminPageProps) {
 
         {props.tab === "external-bots" && (
           <ExternalBotSection channels={props.channels} />
-        )}
-
-        {props.tab === "games" && (
-          <GamesAdminSection hubUrl={props.activeHubUrl} channels={props.channels} />
         )}
 
         {props.tab === "certifications" && (

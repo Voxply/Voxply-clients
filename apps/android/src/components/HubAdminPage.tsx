@@ -22,7 +22,6 @@ import { SurveyAdminSection } from "./SurveyAdminSection";
 import { LobbySettingsSection } from "./LobbySettingsSection";
 import { ChallengeSettingsSection } from "./ChallengeSettingsSection";
 import { ServerTagsSection } from "./ServerTagsSection";
-import { GamesAdminSection } from "./GamesAdminSection";
 import { CertificationsSection } from "./CertificationsSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
 
@@ -41,7 +40,6 @@ export type HubAdminTab =
   | "lobby"
   | "challenge"
   | "tags"
-  | "games"
   | "certifications"
   | "recovery";
 
@@ -168,7 +166,6 @@ export function HubAdminPage(props: HubAdminPageProps) {
     { id: "lobby", label: "Lobby" },
     { id: "challenge", label: "Challenge" },
     { id: "tags", label: "Tags & Badges" },
-    { id: "games", label: "Games" },
     { id: "certifications", label: "Certifications" },
     { id: "recovery", label: "Recovery" },
   ];
@@ -621,12 +618,6 @@ export function HubAdminPage(props: HubAdminPageProps) {
         )}
         {props.tab === "tags" && (
           <ServerTagsSection hubUrl={props.activeHubUrl} isAdmin={true} />
-        )}
-        {props.tab === "games" && (
-          <GamesAdminSection
-            hubUrl={props.activeHubUrl}
-            channels={props.channels.filter((c) => !c.is_category).map((c) => ({ id: c.id, name: c.name }))}
-          />
         )}
         {props.tab === "certifications" && (
           <CertificationsSection

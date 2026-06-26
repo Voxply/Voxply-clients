@@ -1,14 +1,12 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Channel, Message, ActiveStream } from "../../types";
-import { GamepadIcon } from "../Icons";
 import { ScreenShareViewer } from "../ScreenShareViewer";
 import type { ScreenShareViewerRef } from "../ScreenShareViewer";
 
 interface Props {
   selectedChannel: Channel;
   voiceChannelId?: string | null;
-  hasInstalledGames: boolean;
   memberSidebarHidden: boolean;
   searchOpen: boolean;
   searchQuery: string;
@@ -20,7 +18,6 @@ interface Props {
   isAdmin: boolean;
   onVoiceJoin?: () => void;
   onVoiceLeave?: () => void;
-  onOpenGamePicker: () => void;
   onShowPinned: () => void;
   onToggleSearch: () => void;
   onCloseSearch: () => void;
@@ -33,7 +30,6 @@ interface Props {
 export function ChannelHeader({
   selectedChannel,
   voiceChannelId,
-  hasInstalledGames,
   memberSidebarHidden,
   searchOpen,
   searchQuery,
@@ -45,7 +41,6 @@ export function ChannelHeader({
   isAdmin,
   onVoiceJoin,
   onVoiceLeave,
-  onOpenGamePicker,
   onShowPinned,
   onToggleSearch,
   onCloseSearch,
@@ -96,15 +91,6 @@ export function ChannelHeader({
               🎙 {t("voice.join.header")}
             </button>
           )
-        )}
-        {hasInstalledGames && (
-          <button
-            onClick={onOpenGamePicker}
-            className="btn-icon-header"
-            title={t("content.activities")}
-          >
-            <GamepadIcon size={16} />
-          </button>
         )}
         <button
           onClick={onShowPinned}

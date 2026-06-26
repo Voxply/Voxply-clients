@@ -12,11 +12,8 @@ import type {
   AllianceSharedChannel,
   VoiceParticipant,
   ActiveStream,
-  InstalledGame,
   Poll,
 } from "../types";
-import { GamePicker } from "./GamePicker";
-import { GameModal } from "./GameModal";
 import { UserListGrouped } from "./UserListGrouped";
 import { BotCard } from "./BotCard";
 import { UserProfileCard } from "./UserProfileCard";
@@ -32,7 +29,6 @@ import { ChannelMessageList } from "./content/ChannelMessageList";
 import { ChannelComposer } from "./content/ChannelComposer";
 import { PollComposer } from "./PollComposer";
 import { EventsPanel } from "./EventsPanel";
-import { GameSessionPanel } from "./GameSessionPanel";
 import { AllianceView, ReconnectBanner } from "@voxply/ui";
 
 interface SelectedAllianceChannel {
@@ -83,7 +79,6 @@ interface Props {
   voiceChannelId?: string | null;
   onVoiceJoin?: () => void;
   onVoiceLeave?: () => void;
-  installedGames?: InstalledGame[];
   myAvatar?: string | null;
   inputText: string;
   typingByKey: Record<string, TypingEntry>;
@@ -144,7 +139,7 @@ export function ContentArea({
   isAdmin, myRoles, editingMessageId, editingDraft, replyTarget,
   pendingAttachments, stickToBottom, newWhileScrolledUp,
   hubConnected, reconnectingHubs, memberSidebarHidden, voiceActiveUsers, voiceChannelId, onVoiceJoin, onVoiceLeave,
-  installedGames = [], myAvatar,
+  myAvatar,
   inputText, typingByKey, dmTypingByKey,
   messagesEndRef, messagesEndChannelRef, messagesContainerRef, messageInputRef,
   onReconnect, onToggleReaction, onSetReplyTarget,
@@ -181,8 +176,6 @@ export function ContentArea({
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionSelectedIdx, setMentionSelectedIdx] = useState(0);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
   const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
   const messageRowRefs = useRef<(HTMLLIElement | null)[]>([]);
 
@@ -193,7 +186,7 @@ export function ContentArea({
   const [profileCardPubkey, setProfileCardPubkey] = useState<string | null>(null);
   const [showPollComposer, setShowPollComposer] = useState(false);
   const [channelPolls, setChannelPolls] = useState<Poll[]>([]);
-  const [activeContentTab, setActiveContentTab] = useState<"messages" | "events" | "games">("messages");
+  const [activeContentTab, setActiveContentTab] = useState<"messages" | "events">("messages");
 
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(() => {
     if (!selectedChannel) return new Set();
@@ -448,7 +441,6 @@ export function ContentArea({
             <ChannelHeader
               selectedChannel={selectedChannel}
               voiceChannelId={voiceChannelId}
-              hasInstalledGames={installedGames.length > 0}
               memberSidebarHidden={memberSidebarHidden}
               searchOpen={searchOpen}
               searchQuery={searchQuery}
@@ -460,7 +452,6 @@ export function ContentArea({
               isAdmin={isAdmin}
               onVoiceJoin={onVoiceJoin}
               onVoiceLeave={onVoiceLeave}
-              onOpenGamePicker={() => setPickerOpen(true)}
               onShowPinned={() => setShowPinsModal(true)}
               onToggleSearch={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
               onCloseSearch={onCloseSearch}
@@ -469,40 +460,30 @@ export function ContentArea({
               onOpenEditDescription={onOpenEditDescription}
               onStopShare={onStopShare}
             />
-            {(installedGames.length > 0) && (
-              <div style={{ display: "flex", gap: 4, padding: "0 12px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
-                {(["messages", "events", "games"] as const).map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveContentTab(tab)}
-                    style={{
-                      padding: "6px 12px",
-                      background: "none",
-                      border: "none",
-                      borderBottom: activeContentTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
-                      cursor: "pointer",
-                      fontSize: "var(--text-sm)",
-                      fontWeight: activeContentTab === tab ? 600 : 400,
-                      color: activeContentTab === tab ? "var(--text)" : "var(--text-muted)",
-                      marginBottom: -1,
-                    }}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div style={{ display: "flex", gap: 4, padding: "0 12px", borderBottom: "1px solid var(--border)", background: "var(--bg-elevated)" }}>
+              {(["messages", "events"] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveContentTab(tab)}
+                  style={{
+                    padding: "6px 12px",
+                    background: "none",
+                    border: "none",
+                    borderBottom: activeContentTab === tab ? "2px solid var(--accent)" : "2px solid transparent",
+                    cursor: "pointer",
+                    fontSize: "var(--text-sm)",
+                    fontWeight: activeContentTab === tab ? 600 : 400,
+                    color: activeContentTab === tab ? "var(--text)" : "var(--text-muted)",
+                    marginBottom: -1,
+                  }}
+                >
+                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+                </button>
+              ))}
+            </div>
 
             {activeContentTab === "events" ? (
               <EventsPanel myPubkey={publicKey} isAdmin={isAdmin} />
-            ) : activeContentTab === "games" && selectedChannel ? (
-              <GameSessionPanel
-                channelId={selectedChannel.id}
-                installedGames={installedGames}
-                publicKey={publicKey}
-                canStartGame={isAdmin}
-                onLaunchGame={(game) => { setActiveGame(game); }}
-              />
             ) : null}
 
             {activeContentTab === "messages" && <><ChannelMessageList
@@ -619,25 +600,6 @@ export function ContentArea({
           pubkey={botCard.pubkey}
           anchorRect={botCard.rect}
           onClose={() => setBotCard(null)}
-        />
-      )}
-
-      {pickerOpen && (
-        <GamePicker
-          games={installedGames}
-          onSelect={(game) => { setPickerOpen(false); setActiveGame(game); }}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
-
-      {activeGame && (
-        <GameModal
-          game={activeGame}
-          theme={theme}
-          publicKey={publicKey}
-          displayName={myDisplayName}
-          avatar={myAvatar ?? null}
-          onClose={() => setActiveGame(null)}
         />
       )}
 

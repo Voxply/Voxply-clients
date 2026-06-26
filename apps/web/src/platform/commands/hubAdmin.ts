@@ -3,9 +3,6 @@ import type {
   HubSelfTagSettings,
   HubBadge,
   PendingBadgeOffer,
-  InstalledGameAdmin,
-  GameManifest,
-  GameSession,
   CertIssuance,
   CertAdmissionSettings,
   RecoverySettings,
@@ -70,73 +67,6 @@ export async function grantBadge(targetHubUrl: string, label: string): Promise<v
     method: "POST",
     body: JSON.stringify({ target_hub_url: targetHubUrl, label }),
   });
-}
-
-// ---- Games admin ----
-
-export async function listGamesAdmin(): Promise<InstalledGameAdmin[]> {
-  const r = await hubFetch("/admin/games");
-  return r.json() as Promise<InstalledGameAdmin[]>;
-}
-
-export async function installGame(manifest: GameManifest): Promise<void> {
-  await hubFetch("/admin/games", {
-    method: "POST",
-    body: JSON.stringify(manifest),
-  });
-}
-
-export async function installGameFromUrl(manifestUrl: string): Promise<void> {
-  await hubFetch("/admin/games", {
-    method: "POST",
-    body: JSON.stringify({ manifest_url: manifestUrl }),
-  });
-}
-
-export async function uninstallGame(gameId: string): Promise<void> {
-  await hubFetch(`/admin/games/${gameId}`, { method: "DELETE" });
-}
-
-export async function setGameChannelScope(gameId: string, channelIds: string[]): Promise<void> {
-  await hubFetch(`/admin/games/${gameId}/channels`, {
-    method: "PUT",
-    body: JSON.stringify({ channel_ids: channelIds }),
-  });
-}
-
-export async function setGamePermissions(gameId: string, permissions: string[]): Promise<void> {
-  await hubFetch(`/admin/games/${gameId}/permissions`, {
-    method: "PUT",
-    body: JSON.stringify({ permissions }),
-  });
-}
-
-// ---- Game sessions (Tier 2) ----
-
-export async function listGameSessions(channelId: string): Promise<GameSession[]> {
-  const r = await hubFetch(`/games/sessions?channel_id=${encodeURIComponent(channelId)}`);
-  return r.json() as Promise<GameSession[]>;
-}
-
-export async function createGameSession(gameId: string, channelId: string): Promise<{ session_id: string }> {
-  const r = await hubFetch(`/games/${gameId}/sessions`, {
-    method: "POST",
-    body: JSON.stringify({ channel_id: channelId }),
-  });
-  return r.json() as Promise<{ session_id: string }>;
-}
-
-export async function joinGameSession(sessionId: string): Promise<void> {
-  await hubFetch(`/games/sessions/${sessionId}/join`, { method: "POST", body: JSON.stringify({}) });
-}
-
-export async function leaveGameSession(sessionId: string): Promise<void> {
-  await hubFetch(`/games/sessions/${sessionId}/leave`, { method: "POST", body: JSON.stringify({}) });
-}
-
-export async function getGameSession(sessionId: string): Promise<GameSession> {
-  const r = await hubFetch(`/games/sessions/${sessionId}`);
-  return r.json() as Promise<GameSession>;
 }
 
 // ---- Hub certifications ----

@@ -19,7 +19,6 @@ import type {
   VoiceParticipant,
   Hub,
   MeInfo,
-  InstalledGame,
   Conversation,
   DmMessage,
   AllianceInfo,
@@ -90,7 +89,7 @@ import {
 } from "@identity/index";
 
 // ---- Types ----
-type View = "channels" | "dms" | "game";
+type View = "channels" | "dms";
 type HubPreview =
   | { state: "idle" }
   | { state: "loading" }
@@ -236,7 +235,6 @@ export default function App() {
   const [selfMuted, setSelfMuted] = useState(false);
   const [selfDeafened, setSelfDeafened] = useState(false);
   const voiceSessionRef = useRef<VoiceWsSession | null>(null);
-  const [installedGames, setInstalledGames] = useState<InstalledGame[]>([]);
   const [slashCommands, setSlashCommands] = useState<Array<{ command: string; description: string; bot_name: string }>>([]);
   const [userAlliances, setUserAlliances] = useState<AllianceInfo[]>([]);
   const [allianceChannels, setAllianceChannels] = useState<Record<string, AllianceSharedChannel[]>>({});
@@ -246,7 +244,6 @@ export default function App() {
   const [view, setView] = useState<View>("channels");
   const [selectedChannel, setSelectedChannel] = useState<Channel | null>(null);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
-  const [selectedGame, setSelectedGame] = useState<InstalledGame | null>(null);
 
   // === Messages ===
   const [messages, setMessages] = useState<Message[]>([]);
@@ -682,12 +679,11 @@ export default function App() {
     if (loadingHub.current) return;
     loadingHub.current = true;
     try {
-      const [ch, usr, me, convs, games, alliances, cmds, voiceRoster] = await Promise.allSettled([
+      const [ch, usr, me, convs, alliances, cmds, voiceRoster] = await Promise.allSettled([
         hubFetch("/channels").then((r) => r.json() as Promise<Channel[]>),
         hubFetch("/users").then((r) => r.json() as Promise<User[]>),
         hubFetch("/me").then((r) => r.json() as Promise<MeInfo>),
         hubFetch("/conversations").then((r) => r.json() as Promise<Conversation[]>),
-        hubFetch("/hub/games").then((r) => r.json() as Promise<InstalledGame[]>),
         hubFetch("/alliances").then((r) => r.json() as Promise<AllianceInfo[]>).catch(() => [] as AllianceInfo[]),
         listBotCommands().catch(() => [] as Array<{ command: string; description: string; bot_name: string }>),
         fetchVoiceRoster().catch(() => ({} as Record<string, VoiceParticipant[]>)),
@@ -712,7 +708,6 @@ export default function App() {
         }
       }
       if (convs.status === "fulfilled") setConversations(convs.value);
-      if (games.status === "fulfilled") setInstalledGames(games.value);
       if (alliances.status === "fulfilled") {
         const als = alliances.value;
         setUserAlliances(als);
@@ -1128,11 +1123,6 @@ export default function App() {
   );
 
   const myRoles = useMemo(() => meInfo?.roles ?? [], [meInfo]);
-
-  const canManageGames = useMemo(
-    () => myRoles.some((r) => r.permissions?.includes("manage_games") || r.permissions?.includes("admin")),
-    [myRoles],
-  );
 
   const knownDisplayNames = useMemo(
     () => new Set(users.map((u) => u.display_name).filter(Boolean) as string[]),
@@ -1559,7 +1549,6 @@ export default function App() {
         voiceChannelId={voiceChannelId}
         onVoiceJoin={() => selectedChannel && void handleVoiceJoin(selectedChannel)}
         onVoiceLeave={handleVoiceLeave}
-        installedGames={installedGames}
         myAvatar={meInfo?.avatar ?? null}
         inputText={inputText}
         typingByKey={channelTypingByKey}

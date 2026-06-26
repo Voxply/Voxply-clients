@@ -12,10 +12,7 @@ import type {
   AllianceSharedChannel,
   VoiceParticipant,
   ActiveStream,
-  InstalledGame,
 } from "../types";
-import { GamePicker } from "./GamePicker";
-import { GameModal } from "./GameModal";
 import { UserListGrouped } from "./UserListGrouped";
 import { BotCard } from "./BotCard";
 import { ScreenShareViewer } from "./ScreenShareViewer";
@@ -76,7 +73,6 @@ interface Props {
   voiceChannelId: string | null;
   onVoiceJoin: () => void;
   onVoiceLeave: () => void;
-  installedGames?: InstalledGame[];
   myAvatar?: string | null;
   inputText: string;
   typingByKey: Record<string, TypingEntry>;
@@ -133,7 +129,6 @@ export function ContentArea({
   isAdmin, myRoles, editingMessageId, editingDraft, replyTarget,
   pendingAttachments, stickToBottom, newWhileScrolledUp,
   hubConnected, reconnectingHubs, memberSidebarHidden, voiceActiveUsers, voiceChannelId, onVoiceJoin, onVoiceLeave,
-  installedGames = [],
   myAvatar = null,
   inputText, typingByKey, dmTypingByKey,
   messagesEndRef, messagesContainerRef, messageInputRef,
@@ -155,8 +150,6 @@ export function ContentArea({
   const [slashSuggestions, setSlashSuggestions] = useState<SlashCommandEntry[]>([]);
   const [slashSelectedIdx, setSlashSelectedIdx] = useState(0);
   const [botCard, setBotCard] = useState<{ pubkey: string; rect: DOMRect } | null>(null);
-  const [pickerOpen, setPickerOpen] = useState(false);
-  const [activeGame, setActiveGame] = useState<InstalledGame | null>(null);
   const [focusedMessageIndex, setFocusedMessageIndex] = useState<number>(-1);
   const messageRowRefs = useRef<(HTMLDivElement | null)[]>([]);
 
@@ -321,7 +314,6 @@ export function ContentArea({
             <ChannelHeader
               selectedChannel={selectedChannel}
               voiceChannelId={voiceChannelId}
-              hasInstalledGames={installedGames.length > 0}
               memberSidebarHidden={memberSidebarHidden}
               searchOpen={searchOpen}
               searchQuery={searchQuery}
@@ -333,7 +325,6 @@ export function ContentArea({
               isAdmin={isAdmin}
               onVoiceJoin={onVoiceJoin}
               onVoiceLeave={onVoiceLeave}
-              onOpenGamePicker={() => setPickerOpen(true)}
               onToggleSearch={() => searchOpen ? onCloseSearch() : onSetSearchOpen(true)}
               onCloseSearch={onCloseSearch}
               onSetSearchQuery={onSetSearchQuery}
@@ -444,41 +435,6 @@ export function ContentArea({
         />
       )}
 
-      {pickerOpen && (
-        <GamePicker
-          games={installedGames}
-          onSelect={(game) => { setPickerOpen(false); setActiveGame(game); }}
-          onClose={() => setPickerOpen(false)}
-        />
-      )}
-
-      {activeGame && (
-        <GameModal
-          game={activeGame}
-          theme={theme}
-          publicKey={publicKey}
-          displayName={myDisplayName}
-          avatar={myAvatar}
-          hubUrl={activeHub?.hub_url ?? ""}
-          hubId={activeHubId ?? ""}
-          hubName={activeHub?.hub_name ?? ""}
-          channelId={selectedChannel?.id ?? null}
-          channelName={selectedChannel?.name ?? null}
-          farmUrl={null}
-          permissions={[]}
-          recentMessages={messages}
-          channelUsers={users.filter((u) => u.online).map((u) => ({ public_key: u.public_key, display_name: u.display_name, online: true }))}
-          onPostMessage={async (text) => {
-            if (!activeHub || !selectedChannel) return;
-            await fetch(`${activeHub.hub_url}/channels/${selectedChannel.id}/messages`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ content: text }),
-            });
-          }}
-          onClose={() => setActiveGame(null)}
-        />
-      )}
     </>
   );
 }
