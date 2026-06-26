@@ -17,7 +17,6 @@ pub(crate) async fn list_channels(state: State<'_, AppState>) -> Result<Vec<Chan
         .map_err(|e| format!("Invalid: {e}"))
 }
 
-
 #[tauri::command]
 pub(crate) async fn list_hub_emojis(
     state: State<'_, AppState>,
