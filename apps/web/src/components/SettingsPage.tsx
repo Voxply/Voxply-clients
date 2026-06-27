@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { Hub, NamedProfile, NotifLevel, BlockEntry, IgnoreEntry } from "@shared/types";
 import { hubFetch, getNotifPref, setNotifPref } from "@platform";
 import { loadIdentity, seedToPhrase } from "@identity/index";
@@ -37,13 +38,6 @@ interface SettingsPageProps {
   onProfileSaved?: () => void;
 }
 
-const TABS: { id: SettingsTab; label: string }[] = [
-  { id: "profile", label: "Profile" },
-  { id: "notifications", label: "Notifications" },
-  { id: "appearance", label: "Appearance" },
-  { id: "account", label: "Account" },
-];
-
 const THEMES: { value: ThemeId; label: string }[] = [
   { value: "calm", label: "Calm" },
   { value: "classic", label: "Classic" },
@@ -52,13 +46,19 @@ const THEMES: { value: ThemeId; label: string }[] = [
   { value: "custom", label: "Custom" },
 ];
 
-const NOTIF_LEVELS: { value: NotifLevel; label: string }[] = [
-  { value: "all", label: "All messages" },
-  { value: "mentions", label: "Mentions only" },
-  { value: "none", label: "None" },
-];
-
 export function SettingsPage(props: SettingsPageProps) {
+  const { t } = useTranslation();
+  const TABS: { id: SettingsTab; label: string }[] = [
+    { id: "profile", label: t("settings.tabs.profile") },
+    { id: "notifications", label: t("settings.tabs.notifications") },
+    { id: "appearance", label: t("settings.tabs.appearance") },
+    { id: "account", label: t("settings.tabs.account") },
+  ];
+  const NOTIF_LEVELS: { value: NotifLevel; label: string }[] = [
+    { value: "all", label: t("settings.notifications.level.all") },
+    { value: "mentions", label: t("settings.notifications.level.mentions") },
+    { value: "none", label: t("settings.notifications.level.none") },
+  ];
   const [displayName, setDisplayName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | string>("idle");
@@ -91,7 +91,7 @@ export function SettingsPage(props: SettingsPageProps) {
   return (
     <div className="settings-page" style={{ display: "flex", height: "100%", minHeight: 0 }}>
       <aside className="settings-nav" style={{ width: 180, flexShrink: 0, borderRight: "1px solid var(--border)", padding: "16px 8px", display: "flex", flexDirection: "column" }}>
-        <h2 style={{ padding: "0 8px", marginBottom: 12, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>Settings</h2>
+        <h2 style={{ padding: "0 8px", marginBottom: 12, fontSize: "var(--text-sm)", fontWeight: 600, color: "var(--text-muted)", textTransform: "uppercase", letterSpacing: ".05em" }}>{t("settings.title")}</h2>
         <ul style={{ listStyle: "none", margin: 0, padding: 0, flex: 1 }}>
           {TABS.map((tab) => (
             <li key={tab.id}>
@@ -106,7 +106,7 @@ export function SettingsPage(props: SettingsPageProps) {
           ))}
         </ul>
         <button className="settings-nav-close btn-ghost" onClick={props.onClose} style={{ marginTop: 8 }}>
-          Close
+          {t("modal.close")}
         </button>
       </aside>
 
@@ -122,25 +122,25 @@ export function SettingsPage(props: SettingsPageProps) {
 
         {props.tab === "profile" && (
           <section>
-            <h1 style={{ marginBottom: 20 }}>Profile</h1>
+            <h1 style={{ marginBottom: 20 }}>{t("settings.tabs.profile")}</h1>
             <div className="settings-section" style={{ marginBottom: 20 }}>
-              <label className="settings-label" htmlFor="settings-display-name">Display name</label>
+              <label className="settings-label" htmlFor="settings-display-name">{t("profile.display_name")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                This name is shown to other members of hubs you join.
+                {t("settings.profile.display_name.hint")}
               </p>
               <input
                 id="settings-display-name"
                 type="text"
                 value={displayName}
                 onChange={(e) => setDisplayName(e.target.value)}
-                placeholder="Your display name"
+                placeholder={t("settings.profile.display_name.placeholder")}
                 style={{ width: "100%", maxWidth: 320 }}
               />
             </div>
             <div className="settings-section" style={{ marginBottom: 20 }}>
-              <label className="settings-label" htmlFor="settings-avatar-url">Avatar URL</label>
+              <label className="settings-label" htmlFor="settings-avatar-url">{t("settings.profile.avatar_url.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                Link to an image to use as your avatar.
+                {t("settings.profile.avatar_url.hint")}
               </p>
               <input
                 id="settings-avatar-url"
@@ -153,7 +153,7 @@ export function SettingsPage(props: SettingsPageProps) {
               {avatarUrl && (
                 <img
                   src={avatarUrl}
-                  alt="Avatar preview"
+                  alt={t("settings.profile.avatar.preview")}
                   style={{ display: "block", marginTop: 8, width: 56, height: 56, borderRadius: "50%", objectFit: "cover", border: "1px solid var(--border)" }}
                   onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
                 />
@@ -161,9 +161,9 @@ export function SettingsPage(props: SettingsPageProps) {
             </div>
             <div className="settings-row" style={{ display: "flex", alignItems: "center", gap: 12 }}>
               <button className="btn-primary" onClick={handleSaveProfile} disabled={saveStatus === "saving"}>
-                {saveStatus === "saving" ? "Saving…" : "Save profile"}
+                {saveStatus === "saving" ? t("modal.saving") : t("settings.profile.save")}
               </button>
-              {saveStatus === "saved" && <span className="muted" style={{ fontSize: "var(--text-sm)" }}>Saved</span>}
+              {saveStatus === "saved" && <span className="muted" style={{ fontSize: "var(--text-sm)" }}>{t("settings.account.public_profile.saved")}</span>}
               {saveStatus !== "idle" && saveStatus !== "saving" && saveStatus !== "saved" && (
                 <span style={{ color: "var(--danger)", fontSize: "var(--text-sm)" }}>{saveStatus}</span>
               )}
@@ -173,11 +173,11 @@ export function SettingsPage(props: SettingsPageProps) {
 
         {props.tab === "notifications" && (
           <section>
-            <h1 style={{ marginBottom: 20 }}>Notifications</h1>
+            <h1 style={{ marginBottom: 20 }}>{t("settings.tabs.notifications")}</h1>
             <div className="settings-section" style={{ marginBottom: 20 }}>
-              <label className="settings-label">Mention sound</label>
+              <label className="settings-label">{t("settings.notifications.mention.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                Play a sound when your name is mentioned in a message.
+                {t("settings.notifications.mention.hint")}
               </p>
               <label className="checkbox-label" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <input
@@ -185,13 +185,13 @@ export function SettingsPage(props: SettingsPageProps) {
                   checked={props.mentionPingEnabled ?? true}
                   onChange={(e) => props.onMentionPingChange?.(e.target.checked)}
                 />
-                Enable mention ping sound
+                {t("settings.notifications.mention.enable")}
               </label>
             </div>
             <div className="settings-section" style={{ marginBottom: 20 }}>
-              <label className="settings-label">Desktop notifications</label>
+              <label className="settings-label">{t("settings.notifications.desktop.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                Allow the browser to show notifications for new messages.
+                {t("settings.notifications.desktop.hint")}
               </p>
               <button
                 className="btn-secondary"
@@ -201,19 +201,19 @@ export function SettingsPage(props: SettingsPageProps) {
                   }
                 }}
               >
-                Request notification permission
+                {t("settings.notifications.desktop.request")}
               </button>
               {typeof Notification !== "undefined" && (
                 <p className="muted" style={{ marginTop: 8, fontSize: "var(--text-sm)" }}>
-                  Current permission: {Notification.permission}
+                  {t("settings.notifications.desktop.permission", { value: Notification.permission })}
                 </p>
               )}
             </div>
             {props.hubs.length > 0 && (
               <div className="settings-section">
-                <label className="settings-label">Per-hub notification level</label>
+                <label className="settings-label">{t("settings.notifications.per_hub.label")}</label>
                 <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 12 }}>
-                  Control which messages trigger browser notifications for each hub.
+                  {t("settings.notifications.per_hub.hint")}
                 </p>
                 {props.hubs.map((hub) => (
                   <div
@@ -246,11 +246,11 @@ export function SettingsPage(props: SettingsPageProps) {
 
         {props.tab === "appearance" && (
           <section>
-            <h1 style={{ marginBottom: 20 }}>Appearance</h1>
+            <h1 style={{ marginBottom: 20 }}>{t("settings.tabs.appearance")}</h1>
             <div className="settings-section">
-              <label className="settings-label">Theme</label>
+              <label className="settings-label">{t("settings.theme.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 12 }}>
-                Choose how Wavvon looks in your browser.
+                {t("settings.theme.hint")}
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {THEMES.map((t) => (
@@ -280,11 +280,11 @@ export function SettingsPage(props: SettingsPageProps) {
 
         {props.tab === "account" && (
           <section>
-            <h1 style={{ marginBottom: 20 }}>Account</h1>
+            <h1 style={{ marginBottom: 20 }}>{t("settings.tabs.account")}</h1>
             <div className="settings-section" style={{ marginBottom: 20 }}>
-              <label className="settings-label">Public key</label>
+              <label className="settings-label">{t("settings.account.pubkey.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                This is your unique identity. Share it so others can find you.
+                {t("settings.account.pubkey.hint")}
               </p>
               <div className="settings-row" style={{ display: "flex", alignItems: "center", gap: 8 }}>
                 <code
@@ -295,14 +295,14 @@ export function SettingsPage(props: SettingsPageProps) {
                   {props.publicKey ? props.publicKey.slice(0, 16) + "…" + props.publicKey.slice(-8) : "—"}
                 </code>
                 <button className="btn-secondary" onClick={props.onCopyKey}>
-                  {props.copiedKey ? "Copied!" : "Copy"}
+                  {props.copiedKey ? t("modal.copied") : t("modal.copy")}
                 </button>
               </div>
             </div>
             <div className="settings-section">
-              <label className="settings-label">Recovery phrase</label>
+              <label className="settings-label">{t("settings.security.recovery.label")}</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 8 }}>
-                Write this down and store it somewhere safe. It is the only way to recover your identity.
+                {t("settings.security.recovery.hint")}
               </p>
               {props.recoveryPhrase ? (
                 <div
@@ -313,12 +313,12 @@ export function SettingsPage(props: SettingsPageProps) {
                 </div>
               ) : (
                 <button className="btn-secondary" onClick={props.onShowRecovery}>
-                  Reveal recovery phrase
+                  {t("settings.security.recovery.reveal")}
                 </button>
               )}
             </div>
             <div className="settings-section" style={{ marginTop: 20 }}>
-              <label className="settings-label">Identity backup</label>
+              <label className="settings-label">{t("settings.account.identity_backup.label")}</label>
               <IdentityBackupSection publicKey={props.publicKey} />
             </div>
             <BlockIgnoreSection
