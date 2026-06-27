@@ -85,6 +85,9 @@
   --leading-tight: 1.3;
   --leading-normal: 1.5;
 
+  /* Layout */
+  --msg-gutter: 36px; /* avatar(28px) + gap(space-2=8px) */
+
   /* Motion */
   --transition-fast: 120ms ease-out;
   --transition-base: 180ms ease-out;
@@ -3202,7 +3205,7 @@ select:focus-visible {
   flex-wrap: wrap;
   gap: var(--space-2);
   margin-top: var(--space-2);
-  margin-left: 36px; /* align with sender label after avatar */
+  margin-left: var(--msg-gutter);
 }
 
 .message-attachment-img {
@@ -3527,10 +3530,11 @@ select:focus-visible {
 }
 
 .message-reply-preview {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--space-2);
-  margin-left: 36px;
+  margin-left: var(--msg-gutter);
   margin-bottom: 2px;
   padding: 2px 8px;
   border-left: 2px solid var(--border);
@@ -3538,8 +3542,22 @@ select:focus-visible {
   color: var(--text-muted);
   cursor: pointer;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
-  max-width: 100%;
+  width: calc(100% - var(--msg-gutter));
   overflow: hidden;
+}
+
+/* S-path connector: L-shape from avatar column to reply preview left edge */
+.message-reply-preview::before {
+  content: "";
+  position: absolute;
+  left: calc(-1 * var(--msg-gutter) + 10px);
+  top: 0;
+  width: calc(var(--msg-gutter) - 10px);
+  height: 100%;
+  border-left: 2px solid var(--text-faint);
+  border-bottom: 2px solid var(--text-faint);
+  border-bottom-left-radius: 6px;
+  pointer-events: none;
 }
 
 .message-reply-preview:hover {
@@ -3548,7 +3566,7 @@ select:focus-visible {
 }
 
 .reply-arrow {
-  color: var(--text-faint);
+  display: none; /* S-path ::before handles the visual connector */
 }
 
 .reply-author {
@@ -3778,10 +3796,10 @@ select:focus-visible {
   flex-wrap: wrap;
   gap: var(--space-1);
   margin-top: var(--space-1);
-  margin-left: 36px;
-  /* Own row regardless of message-actions visibility */
-  width: 100%;
-  flex-basis: 100%;
+  margin-left: var(--msg-gutter);
+  /* Own row aligned to content gutter */
+  width: calc(100% - var(--msg-gutter));
+  flex-basis: calc(100% - var(--msg-gutter));
 }
 
 .reaction-chip {
