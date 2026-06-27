@@ -1,4 +1,4 @@
-import { hexToBytes } from "@voxply/core";
+﻿import { hexToBytes } from "@wavvon/core";
 import { rawFetch, hubFetch } from "../http";
 import {
   getSession,
@@ -19,7 +19,7 @@ import {
   type SavedHub,
 } from "../storage";
 import { loadIdentity } from "../../identity/store";
-import { signBytes, publicKeyHex } from "@voxply/core";
+import { signBytes, publicKeyHex } from "@wavvon/core";
 import type { Hub } from "@shared/types";
 
 interface InfoResponse {

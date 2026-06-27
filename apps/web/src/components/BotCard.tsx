@@ -1,8 +1,8 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import type { CSSProperties } from "react";
 import type { BotProfile } from "../types";
 import { hubFetch } from "../platform/http";
-import { Avatar } from "@voxply/ui";
+import { Avatar } from "@wavvon/ui";
 
 interface Props {
   pubkey: string;

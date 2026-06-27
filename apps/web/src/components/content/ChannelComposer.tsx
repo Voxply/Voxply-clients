@@ -1,9 +1,9 @@
-import React, { useRef, useState } from "react";
+﻿import React, { useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Message, Attachment, User } from "../../types";
-import { formatPubkey } from "@voxply/core";
+import { formatPubkey } from "@wavvon/core";
 import { EmojiPicker } from "../EmojiPicker";
-import { PendingAttachments } from "@voxply/ui";
+import { PendingAttachments } from "@wavvon/ui";
 
 interface SlashCommandEntry {
   command: string;

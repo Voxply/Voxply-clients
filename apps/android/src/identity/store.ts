@@ -1,6 +1,6 @@
-import { openDB, type IDBPDatabase } from "idb";
+﻿import { openDB, type IDBPDatabase } from "idb";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex } from "@voxply/core";
+import { bytesToHex } from "@wavvon/core";
 
 export interface IdentityRecord {
   id: "main";
@@ -29,7 +29,7 @@ let _db: IDBPDatabase | null = null;
 
 async function getDb(): Promise<IDBPDatabase> {
   if (!_db) {
-    _db = await openDB("voxply", 2, {
+    _db = await openDB("wavvon", 2, {
       upgrade(db, oldVersion) {
         if (oldVersion < 1) {
           db.createObjectStore("identity", { keyPath: "id" });
@@ -68,7 +68,7 @@ export async function generateIdentity(): Promise<IdentityRecord> {
 
 // Hex helpers live in the shared package; re-exported here because the
 // identity modules historically import them from the store.
-export { bytesToHex, hexToBytes } from "@voxply/core";
+export { bytesToHex, hexToBytes } from "@wavvon/core";
 
 export async function loadPairedState(): Promise<PairedState | null> {
   const db = await getDb();

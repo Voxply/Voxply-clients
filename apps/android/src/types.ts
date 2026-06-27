@@ -1,11 +1,11 @@
-// Shared type definitions for the Voxply desktop client.
+﻿// Shared type definitions for the Wavvon desktop client.
 //
 // These map to the JSON shapes returned by Tauri commands and hub
 // HTTP endpoints. Keep them in sync with the Rust side; a renamed
-// field in src-tauri or server/voxply-hub means a rename here too.
+// field in src-tauri or server/wavvon-hub means a rename here too.
 
-// Channel is shared with the channel-tree helpers in @voxply/utils.
-export type { Channel } from "@voxply/core";
+// Channel is shared with the channel-tree helpers in @wavvon/utils.
+export type { Channel } from "@wavvon/core";
 
 export interface HubIcon {
   id: string;

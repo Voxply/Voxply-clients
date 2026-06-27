@@ -1,5 +1,5 @@
-import React from "react";
-import { FocusTrap } from "@voxply/ui";
+﻿import React from "react";
+import { FocusTrap } from "@wavvon/ui";
 
 interface Props {
   name: string;

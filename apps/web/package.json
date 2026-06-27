@@ -1,5 +1,5 @@
-{
-  "name": "voxply-web",
+﻿{
+  "name": "wavvon-web",
   "version": "0.2.6",
   "private": true,
   "type": "module",
@@ -21,9 +21,9 @@
     "@noble/hashes": "^1.6.0",
     "@scure/bip39": "^1.4.0",
     "@types/dompurify": "^3.0.5",
-    "@voxply/core": "workspace:*",
-    "@voxply/i18n": "workspace:*",
-    "@voxply/ui": "workspace:*",
+    "@wavvon/core": "workspace:*",
+    "@wavvon/i18n": "workspace:*",
+    "@wavvon/ui": "workspace:*",
     "dompurify": "^3.4.8",
     "i18next": "^24.2.3",
     "i18next-icu": "^2.4.3",

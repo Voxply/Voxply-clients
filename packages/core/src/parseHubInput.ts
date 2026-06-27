@@ -1,4 +1,4 @@
-export interface HubInputResult {
+﻿export interface HubInputResult {
   hubUrl: string;
   inviteCode: string;
 }
@@ -7,7 +7,7 @@ export interface HubInputResult {
  * Parse any hub address the user can provide into a normalised hubUrl + inviteCode pair.
  *
  * Accepted forms:
- *   voxply://host[:port]/[inviteCode][?params]  — deep link (desktop / mobile)
+ *   wavvon://host[:port]/[inviteCode][?params]  — deep link (desktop / mobile)
  *   https://host[?invite=code]                 — HTTPS URL, optional invite param
  *   https://host[#invite=code]                 — HTTPS URL, invite in hash fragment
  *   host[:port]                                — bare hostname, normalised to https://
@@ -18,9 +18,9 @@ export function parseHubInput(raw: string): HubInputResult | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
 
-  // voxply:// deep link: voxply://host[:port]/[inviteCode][?params]
-  if (trimmed.startsWith("voxply://")) {
-    const rest = trimmed.slice("voxply://".length);
+  // wavvon:// deep link: wavvon://host[:port]/[inviteCode][?params]
+  if (trimmed.startsWith("wavvon://")) {
+    const rest = trimmed.slice("wavvon://".length);
     const slashIdx = rest.indexOf("/");
     const hostPart = slashIdx === -1 ? rest : rest.slice(0, slashIdx);
     const codePart =

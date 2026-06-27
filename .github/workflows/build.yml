@@ -1,4 +1,4 @@
-name: Build check
+﻿name: Build check
 
 on:
   push:
@@ -35,13 +35,13 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: TypeScript check
-        run: pnpm --filter voxply-web exec tsc --noEmit
+        run: pnpm --filter wavvon-web exec tsc --noEmit
 
       - name: vitest
-        run: pnpm --filter voxply-web test
+        run: pnpm --filter wavvon-web test
 
       - name: Web vite build
-        run: pnpm --filter voxply-web build
+        run: pnpm --filter wavvon-web build
 
       - name: i18n coverage check
-        run: pnpm --filter voxply-web run check-i18n
+        run: pnpm --filter wavvon-web run check-i18n

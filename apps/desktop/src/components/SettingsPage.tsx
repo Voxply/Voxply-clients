@@ -1,16 +1,16 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type { BackgroundMode } from "../utils/backgroundProcessor";
 import type { Hub, NamedProfile } from "../types";
-import { formatPubkey } from "@voxply/core";
+import { formatPubkey } from "@wavvon/core";
 import { AudioProfileSection } from "./AudioProfileSection";
 import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";
 import { ThemePicker } from "./ThemePicker";
 import { SkinEditor, makeSeed } from "./SkinEditor";
 import { SkinsGallery } from "./SkinsGallery";
-import type { ThemeId, VoxplySkin } from "../skinValidation";
+import type { ThemeId, WavvonSkin } from "../skinValidation";
 import { ProfileTab } from "./ProfileTab";
 import { RestoreIdentitySection } from "./RestoreIdentitySection";
 import { PairingSection } from "./PairingSection";
@@ -20,7 +20,7 @@ import { RecoveryContactsSection } from "./RecoveryContactsSection";
 import { IdentityCertificationsSection } from "./IdentityCertificationsSection";
 import { DeviceListSection } from "./DeviceListSection";
 import type { BlockEntry, IgnoreEntry } from "../types";
-import { BlockIgnoreSection } from "@voxply/ui";
+import { BlockIgnoreSection } from "@wavvon/ui";
 
 export type SettingsTab =
   | "profile"
@@ -50,8 +50,8 @@ export interface SettingsPageProps {
 
   theme: ThemeId;
   onThemeChange: (t: ThemeId) => void;
-  skin: VoxplySkin | null;
-  onSkinChange: (skin: VoxplySkin) => void;
+  skin: WavvonSkin | null;
+  onSkinChange: (skin: WavvonSkin) => void;
   hasActiveHub: boolean;
   activeHubUrl: string;
   publicKey: string | null;
@@ -107,7 +107,7 @@ export interface SettingsPageProps {
   knownNames: Record<string, string | null>;
   backgroundMode: BackgroundMode;
   onChangeBackground: (mode: BackgroundMode) => void;
-  onImportSkin: (skin: VoxplySkin) => void;
+  onImportSkin: (skin: WavvonSkin) => void;
 }
 
 export function SettingsPage(props: SettingsPageProps) {
@@ -308,7 +308,7 @@ export function SettingsPage(props: SettingsPageProps) {
               <div className="settings-row">
                 <select id="settings-language" value={i18n.language} onChange={e => {
                   i18n.changeLanguage(e.target.value);
-                  localStorage.setItem('voxply_language', e.target.value);
+                  localStorage.setItem('wavvon_language', e.target.value);
                 }}>
                   <option value="en">English</option>
                   <option value="it">Italiano</option>

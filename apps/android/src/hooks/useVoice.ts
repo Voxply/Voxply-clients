@@ -1,10 +1,10 @@
-import { invoke } from "@tauri-apps/api/core";
+﻿import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useState, useEffect, useMemo } from "react";
 import type { Channel, VoiceParticipant, VoiceMuteInfo, ScreenShareOpts } from "../types";
 import { useScreenShare } from "./useScreenShare";
 import { useScreenShareViewer } from "./useScreenShareViewer";
-import { playVoiceTone } from "@voxply/core";
+import { playVoiceTone } from "@wavvon/core";
 
 interface UseVoiceParams {
   activeHubId: string | null;

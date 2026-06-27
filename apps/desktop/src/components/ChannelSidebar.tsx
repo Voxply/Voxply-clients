@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+﻿import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { SearchBar } from "./SearchBar";
 import { WhisperPanel } from "./WhisperPanel";
 import type { WhisperTarget, WhisperList } from "../hooks/useWhisper";
@@ -27,10 +27,10 @@ import type {
   AllianceSharedChannel,
   Conversation,
 } from "../types";
-import type { TreeNode, FlatNode } from "@voxply/core";
+import type { TreeNode, FlatNode } from "@wavvon/core";
 import { PhoneOffIcon, ChannelIcon, PingIcon } from "./Icons";
 import { SortableCategoryItem, SortableChannelItem } from "./SortableItems";
-import { HoverSubmenu } from "@voxply/ui";
+import { HoverSubmenu } from "@wavvon/ui";
 
 const CHANNEL_INDENT_PX = 16;
 

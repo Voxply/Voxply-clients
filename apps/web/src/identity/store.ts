@@ -1,6 +1,6 @@
-import { openDB, type IDBPDatabase } from "idb";
+﻿import { openDB, type IDBPDatabase } from "idb";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex, hexToBytes } from "@voxply/core";
+import { bytesToHex, hexToBytes } from "@wavvon/core";
 
 export interface IdentityRecord {
   id: "main";
@@ -13,7 +13,7 @@ let _db: IDBPDatabase | null = null;
 
 async function getDb(): Promise<IDBPDatabase> {
   if (!_db) {
-    _db = await openDB("voxply", 1, {
+    _db = await openDB("wavvon", 1, {
       upgrade(db) {
         db.createObjectStore("identity", { keyPath: "id" });
       },
@@ -45,4 +45,4 @@ export async function generateIdentity(): Promise<IdentityRecord> {
   return record;
 }
 
-export { bytesToHex, hexToBytes } from "@voxply/core";
+export { bytesToHex, hexToBytes } from "@wavvon/core";

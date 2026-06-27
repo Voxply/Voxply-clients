@@ -1,7 +1,7 @@
-import React from "react";
+﻿import React from "react";
 import type { Message, Attachment, User } from "../../types";
-import { formatPubkey } from "@voxply/core";
-import { PendingAttachments } from "@voxply/ui";
+import { formatPubkey } from "@wavvon/core";
+import { PendingAttachments } from "@wavvon/ui";
 
 interface SlashCommandEntry {
   command: string;

@@ -1,4 +1,4 @@
-import { rawFetch, hubFetch } from "../http";
+﻿import { rawFetch, hubFetch } from "../http";
 import {
   getSession,
   setSession,
@@ -18,7 +18,7 @@ import {
   type SavedHub,
 } from "../storage";
 import { loadIdentity, loadPairedState, hexToBytes, bytesToHex } from "../../identity/store";
-import { signBytes, publicKeyHex } from "@voxply/core";
+import { signBytes, publicKeyHex } from "@wavvon/core";
 import { ed25519 } from "@noble/curves/ed25519";
 import type { Hub } from "@shared/types";
 

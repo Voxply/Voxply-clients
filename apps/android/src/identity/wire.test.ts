@@ -1,4 +1,4 @@
-// Canonical wire-format vectors from hub/docs/wire-format.md (enforced
+﻿// Canonical wire-format vectors from hub/docs/wire-format.md (enforced
 // server-side by hub/identity/tests/wire_vectors.rs). These pin the
 // hand-written encoders in wire.ts to the exact bytes the hub produces,
 // so the formats cannot drift apart.
@@ -9,7 +9,7 @@
 //   timestamp  : 1_700_000_000  (unix seconds)
 import { describe, it, expect } from "vitest";
 import { ed25519 } from "@noble/curves/ed25519";
-import { bytesToHex } from "@voxply/core";
+import { bytesToHex } from "@wavvon/core";
 import {
   offerSigningBytes,
   subkeyCertSigningBytes,
@@ -19,7 +19,7 @@ import {
   dhKeypairFromSeed,
   dhKeySigningBytes,
   dmEnvelopeSigningBytes,
-} from "@voxply/core";
+} from "@wavvon/core";
 
 const TS = 1_700_000_000;
 

@@ -1,16 +1,16 @@
-# Voxply Android
+﻿# Wavvon Android
 
-The Android client for [Voxply](https://github.com/Voxply/Voxply) — an
+The Android client for [Wavvon](https://github.com/Wavvon/Wavvon) — an
 open-source, federated voice + text platform where communities run
 their own servers and **your identity is a keypair, not an account**.
 A mobile-first UI packaged as a native APK with Tauri 2, speaking the
-same hub API as every other Voxply client. Distributed as a direct APK
+same hub API as every other Wavvon client. Distributed as a direct APK
 — no app store, no store account, no middleman.
 
 Like the browser client it is a deliberate **feature subset**: full
 text chat, forums, and DMs on the go; live voice is desktop-only for
 now (see
-[android-client.md](https://github.com/Voxply/Voxply/blob/main/docs/android-client.md)
+[android-client.md](https://github.com/Wavvon/Wavvon/blob/main/docs/android-client.md)
 for the rationale).
 
 ## Features
@@ -29,20 +29,20 @@ for the rationale).
 ## Install
 
 APKs are built and signed by the public
-[CI workflow](https://github.com/Voxply/Voxply-android/actions/workflows/build.yml)
+[CI workflow](https://github.com/Wavvon/Wavvon-android/actions/workflows/build.yml)
 on every push to `main` — download the `android-apk` artifact from the
 latest successful run, or build from source below.
 
 Installing outside an app store requires allowing "unknown sources" and
 dismissing a Play Protect prompt — the step-by-step end-user guide is in
-[install-android.md](https://github.com/Voxply/Voxply/blob/main/docs/install-android.md).
+[install-android.md](https://github.com/Wavvon/Wavvon/blob/main/docs/install-android.md).
 
 The Android client lives in the
-[Voxply-client](https://github.com/Voxply/Voxply-client) monorepo at
+[Wavvon-client](https://github.com/Wavvon/Wavvon-client) monorepo at
 `apps/android`. It is two Tauri 2 wrappers — one around the desktop UI
-(`voxply-desktop/`) and one around the web UI (`voxply-web/`) — sharing
+(`wavvon-desktop/`) and one around the web UI (`wavvon-web/`) — sharing
 the Rust `voice` crate from the monorepo root. JS dependencies and the
-`@voxply/*` packages are resolved by the workspace, so run `pnpm install`
+`@wavvon/*` packages are resolved by the workspace, so run `pnpm install`
 once from the **repo root**.
 
 ## Build from source
@@ -74,20 +74,20 @@ See [`SIGNING.md`](SIGNING.md) for keystore configuration. CI signs
 APKs when the `ANDROID_KEYSTORE_BASE64`, `ANDROID_KEYSTORE_PASSWORD`,
 and `ANDROID_KEY_PASSWORD` repository secrets are set.
 
-The Rust `voice` crate (`crates/voice/`) and the `@voxply/*` packages
+The Rust `voice` crate (`crates/voice/`) and the `@wavvon/*` packages
 are shared from the monorepo root, not vendored here.
 
-## The Voxply project
+## The Wavvon project
 
 | Repo | What it is |
 |---|---|
-| [Voxply-client](https://github.com/Voxply/Voxply-client) | All clients (desktop / web / Android) + shared packages — **Android is here, in `apps/android`** |
-| [Voxply-server](https://github.com/Voxply/Voxply-server) | Hub server, farm tooling, identity crate (Rust) |
-| [Voxply-discovery](https://github.com/Voxply/Voxply-discovery) | Optional public hub directory |
-| [Voxply](https://github.com/Voxply/Voxply) | Architecture wiki, roadmap, API spec |
+| [Wavvon-client](https://github.com/Wavvon/Wavvon-client) | All clients (desktop / web / Android) + shared packages — **Android is here, in `apps/android`** |
+| [Wavvon-server](https://github.com/Wavvon/Wavvon-server) | Hub server, farm tooling, identity crate (Rust) |
+| [Wavvon-discovery](https://github.com/Wavvon/Wavvon-discovery) | Optional public hub directory |
+| [Wavvon](https://github.com/Wavvon/Wavvon) | Architecture wiki, roadmap, API spec |
 
 New here? Start with
-[getting-started.md](https://github.com/Voxply/Voxply/blob/main/docs/getting-started.md).
+[getting-started.md](https://github.com/Wavvon/Wavvon/blob/main/docs/getting-started.md).
 
 ## License
 

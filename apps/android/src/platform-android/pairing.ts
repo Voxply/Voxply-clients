@@ -1,4 +1,4 @@
-import { ed25519 } from "@noble/curves/ed25519";
+﻿import { ed25519 } from "@noble/curves/ed25519";
 import { loadPairedState, savePairedState } from "../identity/store";
 import type { SubkeyCert } from "../identity/store";
 
@@ -32,7 +32,7 @@ function writeStr(s: string): Uint8Array {
 }
 
 function buildClaimSigningBytes(pairingToken: string, subkeyPubkeyHex: string, deviceLabel: string): Uint8Array {
-  const prefix = new TextEncoder().encode("voxply/pairing-claim/v1\0");
+  const prefix = new TextEncoder().encode("wavvon/pairing-claim/v1\0");
   return concat(prefix, writeStr(pairingToken), writeStr(subkeyPubkeyHex), writeStr(deviceLabel));
 }
 

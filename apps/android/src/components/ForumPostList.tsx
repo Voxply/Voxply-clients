@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import type { PostSummary } from "../types";
-import { formatRelative } from "@voxply/core";
+import { formatRelative } from "@wavvon/core";
 
 interface Props {
   channelId: string;

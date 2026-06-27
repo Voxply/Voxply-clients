@@ -1,4 +1,4 @@
-/target
+﻿/target
 /desktop/
 .claude/
 node_modules/
@@ -9,7 +9,7 @@ build/
 **/*.db-shm
 **/*.db-wal
 .env
-voxply-desktop/src-tauri/gen/
+wavvon-desktop/src-tauri/gen/
 *.key
 *.pem
 hub_identity.json

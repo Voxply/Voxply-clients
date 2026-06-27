@@ -1,10 +1,10 @@
-[package]
-name = "voxply-android"
+﻿[package]
+name = "wavvon-android"
 version = "0.1.0"
 edition = "2021"
 
 [lib]
-name = "voxply_android_lib"
+name = "wavvon_android_lib"
 crate-type = ["lib", "cdylib", "staticlib"]
 
 [build-dependencies]
@@ -19,5 +19,5 @@ tauri-plugin-dialog = "2"
 tauri-plugin-shell = "2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-voxply-voice = { path = "../../../crates/voice" }
+wavvon-voice = { path = "../../../crates/voice" }
 tokio = { version = "1", features = ["full"] }

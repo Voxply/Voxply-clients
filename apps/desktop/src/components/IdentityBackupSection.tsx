@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 
 function passphraseStrength(p: string): { score: number; label: string } {
@@ -161,7 +161,7 @@ export function IdentityBackupSection() {
             type="text"
             value={importPath}
             onChange={(e) => setImportPath(e.target.value)}
-            placeholder="/home/you/.voxply/identity-backup-....voxback"
+            placeholder="/home/you/.wavvon/identity-backup-....voxback"
             style={{ marginBottom: 4 }}
           />
           <label className="settings-label" htmlFor="import-passphrase" style={{ fontSize: "var(--text-sm)" }}>

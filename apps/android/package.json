@@ -1,5 +1,5 @@
-{
-  "name": "voxply-android",
+﻿{
+  "name": "wavvon-android",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -20,9 +20,9 @@
     "@tauri-apps/plugin-dialog": "^2.7.1",
     "@tauri-apps/plugin-store": "^2",
     "@types/dompurify": "^3.0.5",
-    "@voxply/core": "workspace:*",
-    "@voxply/i18n": "workspace:*",
-    "@voxply/ui": "workspace:*",
+    "@wavvon/core": "workspace:*",
+    "@wavvon/i18n": "workspace:*",
+    "@wavvon/ui": "workspace:*",
     "dompurify": "^3.4.8",
     "i18next": "^24.2.3",
     "i18next-icu": "^2.4.3",

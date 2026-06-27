@@ -1,4 +1,4 @@
-name: Release Android
+﻿name: Release Android
 
 on:
   push:
@@ -93,7 +93,7 @@ jobs:
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
         run: |
-          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/voxply.keystore
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > /tmp/wavvon.keystore
 
       - name: Generate Android project
         working-directory: apps/android/android
@@ -106,9 +106,9 @@ jobs:
           --target aarch64
           --target armv7
         env:
-          TAURI_ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && '/tmp/voxply.keystore' || '' }}
+          TAURI_ANDROID_KEYSTORE_PATH: ${{ secrets.ANDROID_KEYSTORE_BASE64 != '' && '/tmp/wavvon.keystore' || '' }}
           TAURI_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-          TAURI_ANDROID_KEY_ALIAS: voxply
+          TAURI_ANDROID_KEY_ALIAS: wavvon
           TAURI_ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
 
       - name: Save Gradle cache

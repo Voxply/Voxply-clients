@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from "react";
+﻿import React, { useRef, useEffect } from "react";
 import type { BotAppOpenEvent } from "../types";
 
 interface Props {
@@ -15,7 +15,7 @@ export function BotMiniAppFrame({ event, hubUrl, onClose }: Props) {
     if (!iframe) return;
     const onLoad = () => {
       iframe.contentWindow?.postMessage({
-        type: 'voxply_context',
+        type: 'wavvon_context',
         hub_url: hubUrl,
         token: event.session_token,
         channel_id: event.channel_id,

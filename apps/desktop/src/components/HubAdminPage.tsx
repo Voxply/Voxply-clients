@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+﻿import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type {
@@ -9,7 +9,7 @@ import type {
   PendingUser,
   RoleInfo,
 } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/core";
+import { formatPubkey, formatRelative } from "@wavvon/core";
 import { ImagePicker } from "./ImagePicker";
 import { InvitesSection } from "./InvitesSection";
 import { MemberRow } from "./MemberRow";
@@ -108,13 +108,13 @@ export interface HubAdminPageProps {
   channels: Channel[];
 }
 
-function hubToVoxplyUrl(hubUrl: string): string {
+function hubToWavvonUrl(hubUrl: string): string {
   try {
     const u = new URL(hubUrl);
     const hostPort = u.port ? `${u.hostname}:${u.port}` : u.hostname;
-    return `voxply://${hostPort}`;
+    return `wavvon://${hostPort}`;
   } catch {
-    return `voxply://${hubUrl}`;
+    return `wavvon://${hubUrl}`;
   }
 }
 
@@ -136,7 +136,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
   const [dirLanguage, setDirLanguage] = useState("en");
   const [dirBio, setDirBio] = useState("");
   const [dirInviteCode, setDirInviteCode] = useState("");
-  const [dirUrl, setDirUrl] = useState("https://discovery.voxply.io");
+  const [dirUrl, setDirUrl] = useState("https://discovery.wavvon.io");
   const [dirStatus, setDirStatus] = useState<"idle" | "submitting" | "ok" | "error">("idle");
   const [dirError, setDirError] = useState("");
   const [listed, setListed] = useState(false);
@@ -349,11 +349,11 @@ export function HubAdminPage(props: HubAdminPageProps) {
               </p>
               <div className="settings-row">
                 <code className="pubkey-display">
-                  {hubToVoxplyUrl(props.activeHubUrl)}
+                  {hubToWavvonUrl(props.activeHubUrl)}
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(hubToVoxplyUrl(props.activeHubUrl));
+                    navigator.clipboard.writeText(hubToWavvonUrl(props.activeHubUrl));
                     setCopiedShare(true);
                     setTimeout(() => setCopiedShare(false), 2000);
                   }}

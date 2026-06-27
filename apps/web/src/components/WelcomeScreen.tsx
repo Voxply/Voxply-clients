@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { addHub, previewHubInfo } from "@platform";
 import type { WsHandlers } from "@platform";
 import type { Hub } from "@shared/types";
-import { parseHubInput } from "@voxply/core";
+import { parseHubInput } from "@wavvon/core";
 
 type HubPreview =
   | { state: "idle" }
@@ -35,7 +35,7 @@ export function WelcomeScreen({
 
   return (
     <div className="empty-state welcome" style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "100vh", padding: "32px 16px" }}>
-      <h1 style={{ marginBottom: 8 }}>Voxply</h1>
+      <h1 style={{ marginBottom: 8 }}>Wavvon</h1>
       <p className="welcome-tagline muted" style={{ marginBottom: 32, textAlign: "center" }}>
         Decentralized voice chat. Your identity, every hub.
       </p>
@@ -47,7 +47,7 @@ export function WelcomeScreen({
             value={hubUrl}
             onChange={(e) => onHubUrlChange(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") onJoin(); }}
-            placeholder="hub.example.com  or  voxply://…"
+            placeholder="hub.example.com  or  wavvon://…"
             autoFocus
             style={{ flex: 1 }}
           />
@@ -124,7 +124,7 @@ export function WelcomeScreen({
         onToggle={(e) => setDetailsOpen((e.currentTarget as HTMLDetailsElement).open)}
         style={{ maxWidth: 440, width: "100%", marginBottom: 24 }}
       >
-        <summary style={{ cursor: "pointer", fontWeight: 500, marginBottom: detailsOpen ? 8 : 0 }}>What is Voxply?</summary>
+        <summary style={{ cursor: "pointer", fontWeight: 500, marginBottom: detailsOpen ? 8 : 0 }}>What is Wavvon?</summary>
         <ul className="welcome-points" style={{ paddingLeft: 20, margin: 0 }}>
           <li style={{ marginBottom: 8 }}>
             <strong>Hubs</strong> are independently-run servers — pick any one

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+﻿import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
   formatPubkey,
   meAction,
@@ -6,7 +6,7 @@ import {
   colorForKey,
   dayKey,
   formatRelative,
-} from "@voxply/core";
+} from "@wavvon/core";
 
 describe("formatPubkey", () => {
   it("returns empty string for null", () => {

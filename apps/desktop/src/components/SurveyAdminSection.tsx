@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { SurveyAdmin, SurveyQuestionAdmin, SurveyChoiceAdmin, SurveyResponseAdmin } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/core";
+import { formatPubkey, formatRelative } from "@wavvon/core";
 
 function blankQuestion(): SurveyQuestionAdmin {
   return {

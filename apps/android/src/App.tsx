@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo } from "react";
+﻿import React, { useState, useEffect, useRef, useMemo } from "react";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
 import type {
@@ -28,8 +28,8 @@ import { ContentArea } from "@components/ContentArea";
 import { AddHubModal } from "@components/AddHubModal";
 import { MobileShell } from "@components/MobileShell";
 import type { MobileShellHandle } from "@components/MobileShell";
-import { buildChannelTree } from "@voxply/core";
-import type { TreeNode } from "@voxply/core";
+import { buildChannelTree } from "@wavvon/core";
+import type { TreeNode } from "@wavvon/core";
 import type { ScreenShareViewerRef } from "@components/ScreenShareViewer";
 import {
   restorePersistedHubs,
@@ -55,8 +55,8 @@ import {
 import { sendComponentInteraction } from "@platform";
 import { loadIdentity, saveIdentity, generateIdentity } from "./platform-android/identity-store";
 import { PairingPanel } from "./platform-android/PairingPanel";
-import { publicKeyHex, signBytes, dhKeypairFromSeed } from "@voxply/core";
-import { seedToPhrase, phraseToSeed, validatePhrase } from "@voxply/core";
+import { publicKeyHex, signBytes, dhKeypairFromSeed } from "@wavvon/core";
+import { seedToPhrase, phraseToSeed, validatePhrase } from "@wavvon/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { invoke } from "@tauri-apps/api/core";
 import type { BotAppLaunchEvent, BotAppOpenEvent } from "./types";
@@ -144,7 +144,7 @@ function IdentitySetupScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div style={{ maxWidth: 400, margin: "120px auto", padding: 32, textAlign: "center" }}>
-      <h1>Voxply</h1>
+      <h1>Wavvon</h1>
       <p className="muted">Create a new identity or recover an existing one.</p>
       <button className="btn-primary" style={{ width: "100%", marginBottom: 12 }} onClick={doGenerate}>
         Create new identity
@@ -263,7 +263,7 @@ export default function App() {
 
   useEffect(() => {
     const total = Object.values(unreadByHub).reduce((n, v) => n + v, 0);
-    document.title = total > 0 ? `(${total > 99 ? "99+" : total}) Voxply` : "Voxply";
+    document.title = total > 0 ? `(${total > 99 ? "99+" : total}) Wavvon` : "Wavvon";
   }, [unreadByHub]);
 
   // === Back-press handler ===
@@ -398,7 +398,7 @@ export default function App() {
   useEffect(() => {
     if (ready !== "ok") return;
     const CURRENT = "0.1.0";
-    fetch("https://releases.voxply.io/latest.json")
+    fetch("https://releases.wavvon.io/latest.json")
       .then((r) => r.json())
       .then((data: unknown) => {
         const latest = (data as Record<string, unknown>)?.["android-arm64"] as Record<string, unknown> | undefined;
@@ -802,7 +802,7 @@ export default function App() {
           onToggleDnd={() => {}}
         />
       }
-      title={channelMsgs.selectedChannel?.name ?? selectedConversation?.id ?? "Voxply"}
+      title={channelMsgs.selectedChannel?.name ?? selectedConversation?.id ?? "Wavvon"}
       onBack={() => {}}
     >
       {updateAvailable && (
@@ -814,7 +814,7 @@ export default function App() {
           display: "flex", gap: 12, alignItems: "center",
         }}>
           <span>Update available: v{updateAvailable}</span>
-          <a href="https://releases.voxply.io" target="_blank" rel="noreferrer"
+          <a href="https://releases.wavvon.io" target="_blank" rel="noreferrer"
              style={{ color: "var(--accent)" }}>Download</a>
           <button onClick={() => setUpdateAvailable(null)}
                   style={{ background: "none", border: "none", cursor: "pointer", color: "var(--text-muted)" }}>✕</button>

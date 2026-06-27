@@ -1,13 +1,13 @@
-import { useState, useCallback } from "react";
+﻿import { useState, useCallback } from "react";
 import type { NotifyMode } from "../types";
 
 type HubNotifyMode = Record<string, NotifyMode>;
 type ChannelNotifyMode = Record<string, Record<string, NotifyMode>>;
 
-const STORAGE_KEY_HUB = "voxply.notifyMode.hub";
-const STORAGE_KEY_CHANNEL = "voxply.notifyMode.channel";
-const STORAGE_KEY_PINNED = "voxply.pinnedChannels";
-const STORAGE_KEY_COLLAPSED = "voxply.collapsedCategories";
+const STORAGE_KEY_HUB = "wavvon.notifyMode.hub";
+const STORAGE_KEY_CHANNEL = "wavvon.notifyMode.channel";
+const STORAGE_KEY_PINNED = "wavvon.pinnedChannels";
+const STORAGE_KEY_COLLAPSED = "wavvon.collapsedCategories";
 
 function readJson<T>(key: string, fallback: T): T {
   try {

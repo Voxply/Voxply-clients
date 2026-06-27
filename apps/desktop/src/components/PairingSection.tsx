@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { Hub, SyncResult } from "../types";
 
@@ -501,7 +501,7 @@ export function PairingSection({ hubs }: { hubs: Hub[] }) {
                 </p>
               )}
               <p className="muted">
-                Restart Voxply to connect with your shared identity.
+                Restart Wavvon to connect with your shared identity.
               </p>
               <button onClick={reset}>Done</button>
             </>

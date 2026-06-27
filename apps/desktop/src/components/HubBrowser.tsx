@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import type { HubListing } from "../types";
 
 interface HubBrowserProps {
@@ -12,7 +12,7 @@ interface HubListingResult extends HubListing {
 
 const FALLBACK_HUBS: string[] = [];
 
-const KNOWN_HUBS_URL = "https://hub-directory.voxply.io/known-hubs.json";
+const KNOWN_HUBS_URL = "https://hub-directory.wavvon.io/known-hubs.json";
 
 function normalizeHubUrl(raw: string): string {
   const trimmed = raw.trim();

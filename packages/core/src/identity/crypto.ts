@@ -1,4 +1,4 @@
-import { sha512 } from "@noble/hashes/sha512";
+﻿import { sha512 } from "@noble/hashes/sha512";
 import { hkdf } from "@noble/hashes/hkdf";
 import { sha256 } from "@noble/hashes/sha256";
 import { gcm } from "@noble/ciphers/aes";
@@ -15,7 +15,7 @@ export interface DmEnvelope {
 }
 
 // Ed25519 seed → X25519 scalar (SHA-512 + clamp).
-// Byte-identical to voxply_identity::Identity::dh_keypair() in Rust.
+// Byte-identical to wavvon_identity::Identity::dh_keypair() in Rust.
 export function dhKeypairFromSeed(seedHex: string): {
   dhPriv: Uint8Array;
   dhPub: Uint8Array;
@@ -51,14 +51,14 @@ function concat(...parts: Uint8Array[]): Uint8Array {
 }
 
 // Signing bytes for DH key publication.
-// Matches DhKeyRecord::signing_bytes() in voxply-identity/src/wire.rs.
+// Matches DhKeyRecord::signing_bytes() in wavvon-identity/src/wire.rs.
 export function dhKeySigningBytes(pubkey: string, dhPubkeyHex: string): Uint8Array {
-  const prefix = new TextEncoder().encode("voxply/dh-key/v1\0");
+  const prefix = new TextEncoder().encode("wavvon/dh-key/v1\0");
   return concat(prefix, writeStr(pubkey), writeStr(dhPubkeyHex));
 }
 
 // Signing bytes for a 1:1 encrypted DM envelope.
-// Matches dm_envelope_signing_bytes() in voxply-identity/src/wire.rs.
+// Matches dm_envelope_signing_bytes() in wavvon-identity/src/wire.rs.
 export function dmEnvelopeSigningBytes(
   convId: string,
   ciphertextHex: string,
@@ -66,7 +66,7 @@ export function dmEnvelopeSigningBytes(
   dhPubkeyHex: string,
 ): Uint8Array {
   return concat(
-    new TextEncoder().encode("voxply/dm-ciphertext/v1\0"),
+    new TextEncoder().encode("wavvon/dm-ciphertext/v1\0"),
     writeStr(convId),
     writeStr(ciphertextHex),
     writeStr(nonceHex),
@@ -86,7 +86,7 @@ export function publicKeyHex(seedHex: string): string {
 }
 
 // Encrypt a DM. Produces a signed envelope byte-identical to the Rust
-// encrypt_dm Tauri command in voxply-desktop/src-tauri/src/lib.rs.
+// encrypt_dm Tauri command in wavvon-desktop/src-tauri/src/lib.rs.
 export function encryptDm(
   convId: string,
   plaintext: string,
@@ -99,7 +99,7 @@ export function encryptDm(
     sha256,
     shared,
     new TextEncoder().encode(convId),
-    new TextEncoder().encode("voxply/dm-key/v1"),
+    new TextEncoder().encode("wavvon/dm-key/v1"),
     32,
   );
 
@@ -140,7 +140,7 @@ export function decryptDm(
     sha256,
     shared,
     new TextEncoder().encode(convId),
-    new TextEncoder().encode("voxply/dm-key/v1"),
+    new TextEncoder().encode("wavvon/dm-key/v1"),
     32,
   );
   const nonce = hexToBytes(envelope.nonce_hex);

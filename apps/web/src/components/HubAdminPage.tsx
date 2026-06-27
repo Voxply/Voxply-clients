@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import type {
   BanInfo,
   Channel,
@@ -7,7 +7,7 @@ import type {
   PendingUser,
   RoleInfo,
 } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/core";
+import { formatPubkey, formatRelative } from "@wavvon/core";
 import { ServerTagsSection } from "./ServerTagsSection";
 import { CertificationsSection } from "./CertificationsSection";
 import { RecoveryContactsSection } from "./RecoveryContactsSection";
@@ -62,13 +62,13 @@ export interface HubAdminPageProps {
   channels: Channel[];
 }
 
-function hubToVoxplyUrl(hubUrl: string): string {
+function hubToWavvonUrl(hubUrl: string): string {
   try {
     const u = new URL(hubUrl);
     const hostPort = u.port ? `${u.hostname}:${u.port}` : u.hostname;
-    return `voxply://${hostPort}`;
+    return `wavvon://${hostPort}`;
   } catch {
-    return `voxply://${hubUrl}`;
+    return `wavvon://${hubUrl}`;
   }
 }
 
@@ -78,7 +78,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
   const [dirLanguage, setDirLanguage] = useState("en");
   const [dirBio, setDirBio] = useState("");
   const [dirInviteCode, setDirInviteCode] = useState("");
-  const [dirUrl, setDirUrl] = useState("https://discovery.voxply.io");
+  const [dirUrl, setDirUrl] = useState("https://discovery.wavvon.io");
   const [dirStatus, setDirStatus] = useState<"idle" | "submitting" | "ok" | "error">("idle");
   const [dirError, setDirError] = useState("");
   const [inviteMaxUses, setInviteMaxUses] = useState("");
@@ -176,8 +176,8 @@ export function HubAdminPage(props: HubAdminPageProps) {
             <div className="settings-section">
               <label className="settings-label">Hub invite link</label>
               <div className="settings-row">
-                <code className="pubkey-display">{hubToVoxplyUrl(props.activeHubUrl)}</code>
-                <button onClick={() => { navigator.clipboard.writeText(hubToVoxplyUrl(props.activeHubUrl)).catch(() => {}); setCopiedShare(true); setTimeout(() => setCopiedShare(false), 2000); }}>
+                <code className="pubkey-display">{hubToWavvonUrl(props.activeHubUrl)}</code>
+                <button onClick={() => { navigator.clipboard.writeText(hubToWavvonUrl(props.activeHubUrl)).catch(() => {}); setCopiedShare(true); setTimeout(() => setCopiedShare(false), 2000); }}>
                   {copiedShare ? "Copied!" : "Copy"}
                 </button>
               </div>

@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect } from "react";
+﻿import React, { useState, useCallback, useRef, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type {
   Channel,
@@ -22,7 +22,7 @@ import { ForumView } from "./content/ForumView";
 import { ChannelHeader } from "./content/ChannelHeader";
 import { ChannelMessageList } from "./content/ChannelMessageList";
 import { ChannelComposer } from "./content/ChannelComposer";
-import { AllianceView, ReconnectBanner } from "@voxply/ui";
+import { AllianceView, ReconnectBanner } from "@wavvon/ui";
 
 interface SelectedAllianceChannel {
   alliance_id: string;

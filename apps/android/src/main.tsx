@@ -1,11 +1,11 @@
-import React from "react";
+﻿import React from "react";
 import { createRoot } from "react-dom/client";
-import { initI18n } from "@voxply/i18n";
+import { initI18n } from "@wavvon/i18n";
 import App from "./App";
-import "@voxply/ui/styles.css";
+import "@wavvon/ui/styles.css";
 import "./styles-mobile.css";
 
-const storedLang = localStorage.getItem('voxply_language');
+const storedLang = localStorage.getItem('wavvon_language');
 const browserLang = navigator.language.slice(0, 2);
 const supportedLangs = ['en', 'it', 'es', 'de'];
 const lang = supportedLangs.includes(storedLang ?? '') ? storedLang!

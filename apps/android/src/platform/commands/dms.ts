@@ -1,4 +1,4 @@
-import { hexToBytes, bytesToHex } from "@voxply/core";
+﻿import { hexToBytes, bytesToHex } from "@wavvon/core";
 import { hubFetch, rawFetch } from "../http";
 import { activeSession, getSession } from "../session";
 import { loadIdentity } from "../../identity/store";
@@ -10,7 +10,7 @@ import {
   publicKeyHex,
   dhKeySigningBytes,
   type DmEnvelope,
-} from "@voxply/core";
+} from "@wavvon/core";
 import type { Conversation, DmMessage, DmMessageFull, Attachment } from "@shared/types";
 
 export async function listConversations(): Promise<Conversation[]> {

@@ -1,4 +1,4 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Message, User, RoleInfo, Hub, Poll } from "../../types";
 import {
@@ -10,7 +10,7 @@ import {
   formatDayLabel,
   formatFullTimestamp,
   formatRelative,
-} from "@voxply/core";
+} from "@wavvon/core";
 import { MessageReactions } from "../MessageReactions";
 import { ReactionPicker } from "../ReactionPicker";
 import { MessageEmbeds } from "../MessageEmbeds";
@@ -18,7 +18,7 @@ import { MessageComponents } from "../MessageComponents";
 import { LinkPreviewInMessage } from "../LinkPreviewInMessage";
 import { PollCard } from "../PollCard";
 import { pinMessage, unpinMessage } from "@platform";
-import { Avatar, MessageAttachments, MessageContent } from "@voxply/ui";
+import { Avatar, MessageAttachments, MessageContent } from "@wavvon/ui";
 
 interface Props {
   message: Message;
@@ -270,7 +270,7 @@ export function MessageRow({
                 onClick={async () => {
                   const hub = hubs.find((h) => h.hub_id === activeHubId);
                   if (!hub) return;
-                  const link = `voxply://${hub.hub_url.replace(/^https?:\/\//, "")}/channel/${m.channel_id}/message/${m.id}`;
+                  const link = `wavvon://${hub.hub_url.replace(/^https?:\/\//, "")}/channel/${m.channel_id}/message/${m.id}`;
                   try {
                     await navigator.clipboard.writeText(link);
                     onToast(t("message.action.link_copied"));

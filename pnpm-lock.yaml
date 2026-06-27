@@ -44,13 +44,13 @@ importers:
       '@types/dompurify':
         specifier: ^3.0.5
         version: 3.2.0
-      '@voxply/core':
+      '@wavvon/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@voxply/i18n':
+      '@wavvon/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@voxply/ui':
+      '@wavvon/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       dompurify:
@@ -129,13 +129,13 @@ importers:
       '@types/dompurify':
         specifier: ^3.0.5
         version: 3.2.0
-      '@voxply/core':
+      '@wavvon/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@voxply/i18n':
+      '@wavvon/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@voxply/ui':
+      '@wavvon/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       dompurify:
@@ -214,13 +214,13 @@ importers:
       '@types/dompurify':
         specifier: ^3.0.5
         version: 3.2.0
-      '@voxply/core':
+      '@wavvon/core':
         specifier: workspace:*
         version: link:../../packages/core
-      '@voxply/i18n':
+      '@wavvon/i18n':
         specifier: workspace:*
         version: link:../../packages/i18n
-      '@voxply/ui':
+      '@wavvon/ui':
         specifier: workspace:*
         version: link:../../packages/ui
       dompurify:
@@ -319,7 +319,7 @@ importers:
       '@fontsource-variable/jetbrains-mono':
         specifier: ^5.2.8
         version: 5.2.8
-      '@voxply/core':
+      '@wavvon/core':
         specifier: workspace:*
         version: link:../core
       dompurify:

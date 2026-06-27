@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 
 interface HubListing {
   hub_pubkey: string;
@@ -20,7 +20,7 @@ interface Props {
   directoryUrl?: string;
 }
 
-const DEFAULT_DIR = "https://discovery.voxply.io";
+const DEFAULT_DIR = "https://discovery.wavvon.io";
 const PAGE_SIZE = 20;
 
 export function DiscoverPage({ onClose, onJoinHub, directoryUrl = DEFAULT_DIR }: Props) {

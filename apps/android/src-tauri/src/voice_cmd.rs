@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+﻿use std::collections::HashMap;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Mutex};
 use tauri::{AppHandle, Emitter, State};
@@ -76,8 +76,8 @@ pub(crate) async fn voice_join(
             }
         };
         rt.block_on(async move {
-            let vsettings = voxply_voice::VoiceSettings::default();
-            let mut pipeline = match voxply_voice::AudioPipeline::start_p2p_with_settings(
+            let vsettings = wavvon_voice::VoiceSettings::default();
+            let mut pipeline = match wavvon_voice::AudioPipeline::start_p2p_with_settings(
                 0, addr, vsettings,
             )
             .await
@@ -198,9 +198,9 @@ pub(crate) fn voice_set_deafened(
 
 #[tauri::command]
 pub(crate) fn list_audio_devices() -> Result<AudioDeviceList, String> {
-    let inputs = voxply_voice::devices::list_input_devices().map_err(|e| format!("inputs: {e}"))?;
+    let inputs = wavvon_voice::devices::list_input_devices().map_err(|e| format!("inputs: {e}"))?;
     let outputs =
-        voxply_voice::devices::list_output_devices().map_err(|e| format!("outputs: {e}"))?;
+        wavvon_voice::devices::list_output_devices().map_err(|e| format!("outputs: {e}"))?;
     Ok(AudioDeviceList { inputs, outputs })
 }
 
@@ -223,9 +223,9 @@ pub(crate) fn mic_test_start(state: State<'_, VoiceState>, app: AppHandle) -> Re
             }
         };
         rt.block_on(async move {
-            let vsettings = voxply_voice::VoiceSettings::default();
+            let vsettings = wavvon_voice::VoiceSettings::default();
             let mut pipeline =
-                match voxply_voice::AudioPipeline::start_loopback_with_settings(vsettings).await {
+                match wavvon_voice::AudioPipeline::start_loopback_with_settings(vsettings).await {
                     Ok(p) => p,
                     Err(e) => {
                         let _ = ready_tx.send(Err(format!("Audio: {e}")));

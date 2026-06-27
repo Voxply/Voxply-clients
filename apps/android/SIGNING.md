@@ -1,4 +1,4 @@
-# Android Release Signing
+﻿# Android Release Signing
 
 Release APKs are signed with a single long-lived self-signed keystore.
 **Losing this keystore forces every existing user to uninstall and reinstall**
@@ -10,8 +10,8 @@ Run this once and store the output file somewhere safe:
 
 ```
 keytool -genkey -v \
-  -keystore voxply.keystore \
-  -alias voxply \
+  -keystore wavvon.keystore \
+  -alias wavvon \
   -keyalg RSA \
   -keysize 4096 \
   -validity 36500
@@ -24,7 +24,7 @@ Distinguished Name values when prompted.
 
 | Secret name | Value |
 |---|---|
-| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 voxply.keystore` |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 wavvon.keystore` |
 | `ANDROID_KEYSTORE_PASSWORD` | the keystore password you chose |
 | `ANDROID_KEY_PASSWORD` | the key password (can be the same) |
 
@@ -33,9 +33,9 @@ Settings → Secrets and variables → Actions → New repository secret.
 ## Local release build
 
 ```
-set TAURI_ANDROID_KEYSTORE_PATH=C:\path\to\voxply.keystore
+set TAURI_ANDROID_KEYSTORE_PATH=C:\path\to\wavvon.keystore
 set TAURI_ANDROID_KEYSTORE_PASSWORD=yourpassword
-set TAURI_ANDROID_KEY_ALIAS=voxply
+set TAURI_ANDROID_KEY_ALIAS=wavvon
 set TAURI_ANDROID_KEY_PASSWORD=yourpassword
 
 cargo tauri android build --target aarch64-linux-android

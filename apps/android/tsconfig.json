@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ES2020",
     "module": "ESNext",
@@ -22,13 +22,13 @@
       "@shared/hooks/*": ["./src/hooks/*"],
       "@shared/constants": ["./src/constants"],
       "@platform": ["./src/platform/index"],
-      "@voxply/i18n": ["../../../packages/i18n/index.ts"],
-      "@voxply/core": ["../../../packages/core/src/index.ts"],
-      "@voxply/ui": ["../../../packages/ui/src/index.ts"],
-      "@voxply/ui/styles.css": ["../../../packages/ui/src/styles.css"],
-      "@noble/curves/*": ["./node_modules/@voxply/core/node_modules/@noble/curves/*"],
-      "@noble/hashes/*": ["./node_modules/@voxply/core/node_modules/@noble/hashes/*"],
-      "@noble/ciphers/*": ["./node_modules/@voxply/core/node_modules/@noble/ciphers/*"]
+      "@wavvon/i18n": ["../../../packages/i18n/index.ts"],
+      "@wavvon/core": ["../../../packages/core/src/index.ts"],
+      "@wavvon/ui": ["../../../packages/ui/src/index.ts"],
+      "@wavvon/ui/styles.css": ["../../../packages/ui/src/styles.css"],
+      "@noble/curves/*": ["./node_modules/@wavvon/core/node_modules/@noble/curves/*"],
+      "@noble/hashes/*": ["./node_modules/@wavvon/core/node_modules/@noble/hashes/*"],
+      "@noble/ciphers/*": ["./node_modules/@wavvon/core/node_modules/@noble/ciphers/*"]
     }
   },
   "include": ["src", "../../../packages/ui/src"],

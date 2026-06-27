@@ -1,5 +1,5 @@
-import React from "react";
-import { FocusTrap } from "@voxply/ui";
+﻿import React from "react";
+import { FocusTrap } from "@wavvon/ui";
 
 type HubPreview =
   | { state: "idle" }
@@ -26,7 +26,7 @@ export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, inviteCode, on
       <div className="modal" role="dialog" aria-modal="true" aria-labelledby="add-hub-title" onClick={(e) => e.stopPropagation()}>
         <h3 id="add-hub-title">Add Hub</h3>
         <p className="muted" style={{ marginBottom: "var(--space-3)" }}>
-          Paste a hub address or a <code>voxply://</code> invite link.
+          Paste a hub address or a <code>wavvon://</code> invite link.
         </p>
         <input
           type="text"
@@ -36,7 +36,7 @@ export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, inviteCode, on
             if (e.key === "Enter") onAdd();
             if (e.key === "Escape") onClose();
           }}
-          placeholder="hub.example.com  or  voxply://hub.example.com/invite"
+          placeholder="hub.example.com  or  wavvon://hub.example.com/invite"
           autoFocus
         />
         {hubPreview.state === "loading" && (

@@ -1,8 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+﻿import { useState, useEffect, useRef } from "react";
 import { validateSkin } from "../skinValidation";
-import type { VoxplySkin } from "../skinValidation";
+import type { WavvonSkin } from "../skinValidation";
 
-const DISCOVERY_URL = "https://discovery.voxply.app";
+const DISCOVERY_URL = "https://discovery.wavvon.app";
 
 interface SkinListItem {
   id: string;
@@ -17,7 +17,7 @@ interface SkinListItem {
 }
 
 interface Props {
-  onImport: (skin: VoxplySkin) => void;
+  onImport: (skin: WavvonSkin) => void;
 }
 
 const BASE_OPTIONS = [

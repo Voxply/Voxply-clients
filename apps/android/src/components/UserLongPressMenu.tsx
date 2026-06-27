@@ -1,6 +1,6 @@
-import React from "react";
+﻿import React from "react";
 import type { User } from "../types";
-import { formatPubkey } from "@voxply/core";
+import { formatPubkey } from "@wavvon/core";
 
 interface Props {
   user: User;

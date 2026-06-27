@@ -1,8 +1,8 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { NamedProfile, User } from "../types";
-import { type ThemeId, type VoxplySkin, applySkinTokens, clearSkinTokens } from "../skinValidation";
-import { newProfileId } from "@voxply/core";
+import { type ThemeId, type WavvonSkin, applySkinTokens, clearSkinTokens } from "../skinValidation";
+import { newProfileId } from "@wavvon/core";
 import type { SettingsTab } from "../components/SettingsPage";
 
 interface UseSettingsProfileParams {
@@ -23,7 +23,7 @@ export function useSettingsProfile({
   const [showSettings, setShowSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsTab>("profile");
   const [theme, setTheme] = useState<ThemeId>("calm");
-  const [skin, setSkin] = useState<VoxplySkin | null>(null);
+  const [skin, setSkin] = useState<WavvonSkin | null>(null);
   const [profiles, setProfiles] = useState<NamedProfile[]>([]);
   const [defaultProfileId, setDefaultProfileId] = useState<string | null>(null);
   const [recoveryPhrase, setRecoveryPhrase] = useState<string | null>(null);
@@ -119,7 +119,7 @@ export function useSettingsProfile({
     await persistProfileFile({ theme: t });
   }
 
-  async function handleSkinChange(s: VoxplySkin) {
+  async function handleSkinChange(s: WavvonSkin) {
     setSkin(s);
     setTheme("custom");
     document.documentElement.dataset.theme = s.base;
@@ -146,9 +146,9 @@ export function useSettingsProfile({
     try {
       await invoke("clear_local_data");
       try {
-        localStorage.removeItem("voxply.recentEmojis");
-        localStorage.removeItem("voxply.memberSidebarHidden");
-        localStorage.removeItem("voxply.mentionPing");
+        localStorage.removeItem("wavvon.recentEmojis");
+        localStorage.removeItem("wavvon.memberSidebarHidden");
+        localStorage.removeItem("wavvon.mentionPing");
       } catch {}
       setToast("Local data cleared — reloading…");
       setTimeout(() => window.location.reload(), 600);

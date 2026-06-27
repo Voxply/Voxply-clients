@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type {
   BanInfo,
@@ -8,7 +8,7 @@ import type {
   PendingUser,
   RoleInfo,
 } from "../types";
-import { formatPubkey, formatRelative } from "@voxply/core";
+import { formatPubkey, formatRelative } from "@wavvon/core";
 import { ImagePicker } from "./ImagePicker";
 import { InvitesSection } from "./InvitesSection";
 import { MemberRow } from "./MemberRow";
@@ -102,13 +102,13 @@ export interface HubAdminPageProps {
   channels: Channel[];
 }
 
-function hubToVoxplyUrl(hubUrl: string): string {
+function hubToWavvonUrl(hubUrl: string): string {
   try {
     const u = new URL(hubUrl);
     const hostPort = u.port ? `${u.hostname}:${u.port}` : u.hostname;
-    return `voxply://${hostPort}`;
+    return `wavvon://${hostPort}`;
   } catch {
-    return `voxply://${hubUrl}`;
+    return `wavvon://${hubUrl}`;
   }
 }
 
@@ -129,7 +129,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
   const [dirLanguage, setDirLanguage] = useState("en");
   const [dirBio, setDirBio] = useState("");
   const [dirInviteCode, setDirInviteCode] = useState("");
-  const [dirUrl, setDirUrl] = useState("https://discovery.voxply.io");
+  const [dirUrl, setDirUrl] = useState("https://discovery.wavvon.io");
   const [dirStatus, setDirStatus] = useState<"idle" | "submitting" | "ok" | "error">("idle");
   const [dirError, setDirError] = useState("");
 
@@ -302,17 +302,17 @@ export function HubAdminPage(props: HubAdminPageProps) {
             <div className="settings-section">
               <label className="settings-label">Share this hub</label>
               <p className="muted">
-                Anyone with Voxply who opens this link will see a preview
+                Anyone with Wavvon who opens this link will see a preview
                 and can join. For invite-only hubs, also share an invite
                 code from the Invites tab.
               </p>
               <div className="settings-row">
                 <code className="pubkey-display">
-                  {hubToVoxplyUrl(props.activeHubUrl)}
+                  {hubToWavvonUrl(props.activeHubUrl)}
                 </code>
                 <button
                   onClick={() => {
-                    navigator.clipboard.writeText(hubToVoxplyUrl(props.activeHubUrl));
+                    navigator.clipboard.writeText(hubToWavvonUrl(props.activeHubUrl));
                     setCopiedShare(true);
                     setTimeout(() => setCopiedShare(false), 2000);
                   }}
@@ -324,7 +324,7 @@ export function HubAdminPage(props: HubAdminPageProps) {
             <div className="settings-section">
               <label className="settings-label">Submit to directory</label>
               <p className="muted">
-                List this hub on the Voxply discovery directory so others can
+                List this hub on the Wavvon discovery directory so others can
                 find it. Your hub signs the submission — no account needed.
               </p>
               <div className="settings-section">

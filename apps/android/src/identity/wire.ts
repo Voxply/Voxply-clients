@@ -1,4 +1,4 @@
-// Wire format helpers — match Rust's write_u32_le / write_u64_le / write_str /
+﻿// Wire format helpers — match Rust's write_u32_le / write_u64_le / write_str /
 // write_str_vec in desktop/src-tauri/src/identity.rs.
 
 function concat(...parts: Uint8Array[]): Uint8Array {
@@ -42,7 +42,7 @@ export function offerSigningBytes(
   expiresAt: number,
 ): Uint8Array {
   return concat(
-    new TextEncoder().encode("voxply/pairing-offer/v1\0"),
+    new TextEncoder().encode("wavvon/pairing-offer/v1\0"),
     writeStr(masterPubkey),
     writeStrVec(homeHubs),
     writeStr(pairingToken),
@@ -64,7 +64,7 @@ export function subkeyCertSigningBytes(
       ? new Uint8Array([0])
       : concat(new Uint8Array([1]), writeU64LE(notAfter));
   return concat(
-    new TextEncoder().encode("voxply/subkey-cert/v1\0"),
+    new TextEncoder().encode("wavvon/subkey-cert/v1\0"),
     writeStr(masterPubkey),
     writeStr(subkeyPubkey),
     writeStr(deviceLabel),
@@ -80,7 +80,7 @@ export function claimSigningBytes(
   deviceLabel: string,
 ): Uint8Array {
   return concat(
-    new TextEncoder().encode("voxply/pairing-claim/v1\0"),
+    new TextEncoder().encode("wavvon/pairing-claim/v1\0"),
     writeStr(pairingToken),
     writeStr(subkeyPubkey),
     writeStr(deviceLabel),

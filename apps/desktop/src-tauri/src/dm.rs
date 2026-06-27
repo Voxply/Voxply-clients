@@ -1,4 +1,4 @@
-use crate::state::{active_session, AppState};
+﻿use crate::state::{active_session, AppState};
 use crate::types::{
     AttachmentInfo, ConversationInfo, DmMessageInfo, FriendInfo, RawDmMessageResponse,
 };
@@ -239,7 +239,7 @@ fn decrypt_dm_inner(
 
     let hk = Hkdf::<Sha256>::new(Some(conv_id.as_bytes()), shared.as_bytes());
     let mut key_bytes = [0u8; 32];
-    hk.expand(b"voxply/dm-key/v1", &mut key_bytes)
+    hk.expand(b"wavvon/dm-key/v1", &mut key_bytes)
         .map_err(|e| e.to_string())?;
 
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key_bytes));
@@ -421,7 +421,7 @@ pub(crate) async fn encrypt_dm(
 
     let hk = Hkdf::<Sha256>::new(Some(conv_id.as_bytes()), shared.as_bytes());
     let mut key_bytes = [0u8; 32];
-    hk.expand(b"voxply/dm-key/v1", &mut key_bytes)
+    hk.expand(b"wavvon/dm-key/v1", &mut key_bytes)
         .map_err(|e| e.to_string())?;
 
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&key_bytes));
@@ -467,7 +467,7 @@ pub(crate) async fn decrypt_dm(
 
 fn group_sender_keys_path() -> Result<std::path::PathBuf, String> {
     let home = dirs::home_dir().ok_or_else(|| "Could not find home directory".to_string())?;
-    Ok(home.join(".voxply").join("group_sender_keys.json"))
+    Ok(home.join(".wavvon").join("group_sender_keys.json"))
 }
 
 fn load_sender_key_state() -> Result<serde_json::Value, String> {
@@ -494,7 +494,7 @@ pub(crate) fn dm_envelope_signing_bytes(
     nonce_hex: &str,
     dh_pubkey_hex: &str,
 ) -> Vec<u8> {
-    let mut out = b"voxply/dm-ciphertext/v1\0".to_vec();
+    let mut out = b"wavvon/dm-ciphertext/v1\0".to_vec();
     for s in [conv_id, ciphertext_hex, nonce_hex, dh_pubkey_hex] {
         let b = s.as_bytes();
         out.extend_from_slice(&(b.len() as u32).to_le_bytes());
@@ -513,7 +513,7 @@ pub(crate) fn sender_key_dist_signing_bytes(
         out.extend_from_slice(&(b.len() as u32).to_le_bytes());
         out.extend_from_slice(b);
     }
-    let mut out = b"voxply/group-key-dist/v1\0".to_vec();
+    let mut out = b"wavvon/group-key-dist/v1\0".to_vec();
     len_prefixed(&mut out, conv_id);
     len_prefixed(&mut out, &version.to_string());
     let mut sorted = recipients.to_vec();
@@ -537,7 +537,7 @@ pub(crate) fn group_envelope_signing_bytes(
         out.extend_from_slice(&(b.len() as u32).to_le_bytes());
         out.extend_from_slice(b);
     }
-    let mut out = b"voxply/group-dm-ciphertext/v1\0".to_vec();
+    let mut out = b"wavvon/group-dm-ciphertext/v1\0".to_vec();
     len_prefixed(&mut out, conv_id);
     len_prefixed(&mut out, &version.to_string());
     len_prefixed(&mut out, &iteration.to_string());
@@ -562,7 +562,7 @@ fn wrap_chain_key(
     let shared = my_dh_sec.diffie_hellman(recipient_dh_pub);
     let hk = Hkdf::<Sha256>::new(Some(conv_id.as_bytes()), shared.as_bytes());
     let mut wrap_key = [0u8; 32];
-    hk.expand(b"voxply/group-key-dist/v1", &mut wrap_key)
+    hk.expand(b"wavvon/group-key-dist/v1", &mut wrap_key)
         .map_err(|e| e.to_string())?;
 
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&wrap_key));
@@ -922,7 +922,7 @@ pub(crate) async fn fetch_group_sender_keys(
         let hk = Hkdf::<Sha256>::new(Some(conv_id.as_bytes()), shared.as_bytes());
         let mut wrap_key = [0u8; 32];
         if hk
-            .expand(b"voxply/group-key-dist/v1", &mut wrap_key)
+            .expand(b"wavvon/group-key-dist/v1", &mut wrap_key)
             .is_err()
         {
             continue;
@@ -1007,7 +1007,7 @@ pub(crate) async fn encrypt_group_dm(
     let hk_msg = Hkdf::<Sha256>::new(Some(&iteration.to_be_bytes()), &chain_key);
     let mut msg_key = [0u8; 32];
     hk_msg
-        .expand(b"voxply/group-msg/v1", &mut msg_key)
+        .expand(b"wavvon/group-msg/v1", &mut msg_key)
         .map_err(|e| e.to_string())?;
 
     let mut nonce_bytes = [0u8; 12];
@@ -1023,7 +1023,7 @@ pub(crate) async fn encrypt_group_dm(
     let hk_chain = Hkdf::<Sha256>::new(Some(&iteration.to_be_bytes()), &chain_key);
     let mut new_chain_key = [0u8; 32];
     hk_chain
-        .expand(b"voxply/group-chain/v1", &mut new_chain_key)
+        .expand(b"wavvon/group-chain/v1", &mut new_chain_key)
         .map_err(|e| e.to_string())?;
     let new_iteration = iteration + 1;
 
@@ -1119,7 +1119,7 @@ fn decrypt_group_dm_inner(
     for i in stored_iteration..iteration {
         let hk = Hkdf::<Sha256>::new(Some(&i.to_be_bytes()), &chain_key);
         let mut next = [0u8; 32];
-        hk.expand(b"voxply/group-chain/v1", &mut next)
+        hk.expand(b"wavvon/group-chain/v1", &mut next)
             .map_err(|e| e.to_string())?;
         chain_key = next;
     }
@@ -1127,7 +1127,7 @@ fn decrypt_group_dm_inner(
     let hk_msg = Hkdf::<Sha256>::new(Some(&iteration.to_be_bytes()), &chain_key);
     let mut msg_key = [0u8; 32];
     hk_msg
-        .expand(b"voxply/group-msg/v1", &mut msg_key)
+        .expand(b"wavvon/group-msg/v1", &mut msg_key)
         .map_err(|e| e.to_string())?;
 
     let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(&msg_key));

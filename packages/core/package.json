@@ -1,5 +1,5 @@
-{
-  "name": "@voxply/core",
+﻿{
+  "name": "@wavvon/core",
   "version": "0.1.0",
   "private": true,
   "description": "Platform-agnostic TypeScript: invite/URL parsing, wire types, reconnect backoff, noble crypto",

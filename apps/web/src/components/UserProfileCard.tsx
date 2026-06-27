@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import type { UserProfile } from "../types";
 import { getUserProfile } from "@platform";
-import { formatRelative } from "@voxply/core";
-import { Avatar } from "@voxply/ui";
+import { formatRelative } from "@wavvon/core";
+import { Avatar } from "@wavvon/ui";
 
 interface Props {
   pubkey: string;

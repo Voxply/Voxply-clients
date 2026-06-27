@@ -1,21 +1,21 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useTranslation } from "react-i18next";
 import type { Hub, NamedProfile, BlockEntry, IgnoreEntry, DndSettings } from "../types";
-import { formatPubkey } from "@voxply/core";
+import { formatPubkey } from "@wavvon/core";
 import { MicLevelMeter } from "./MicLevelMeter";
 import { PttKeyBinder } from "./PttKeyBinder";
 import { ThemePicker } from "./ThemePicker";
 import { SkinEditor, makeSeed } from "./SkinEditor";
 import { SkinsGallery } from "./SkinsGallery";
-import type { ThemeId, VoxplySkin } from "../skinValidation";
+import type { ThemeId, WavvonSkin } from "../skinValidation";
 import { ProfileTab } from "./ProfileTab";
 import { RestoreIdentitySection } from "./RestoreIdentitySection";
 import { PairingSection } from "./PairingSection";
 import { HomeHubSection } from "./HomeHubSection";
 import { IdentityBackupSection } from "./IdentityBackupSection";
 import { DndSection } from "./DndSection";
-import { BlockIgnoreSection } from "@voxply/ui";
+import { BlockIgnoreSection } from "@wavvon/ui";
 
 export type SettingsTab =
   | "profile"
@@ -47,8 +47,8 @@ export interface SettingsPageProps {
 
   theme: ThemeId;
   onThemeChange: (t: ThemeId) => void;
-  skin: VoxplySkin | null;
-  onSkinChange: (skin: VoxplySkin) => void;
+  skin: WavvonSkin | null;
+  onSkinChange: (skin: WavvonSkin) => void;
   hasActiveHub: boolean;
   publicKey: string | null;
   copiedKey: boolean;
@@ -82,7 +82,7 @@ export interface SettingsPageProps {
   onDndChange: (s: DndSettings) => void;
   onExportBackup: (passphrase: string, label: string) => Promise<string>;
   onImportBackup: (fileContent: string, passphrase: string) => Promise<"same" | "replaced" | "conflict">;
-  onImportSkin: (skin: VoxplySkin) => void;
+  onImportSkin: (skin: WavvonSkin) => void;
 }
 
 export function SettingsPage(props: SettingsPageProps) {
@@ -273,7 +273,7 @@ export function SettingsPage(props: SettingsPageProps) {
             <div className="settings-section">
               <label className="settings-label">Theme</label>
               <p className="muted">
-                How Voxply looks. Pick whichever feels right — you can change
+                How Wavvon looks. Pick whichever feels right — you can change
                 it any time.
               </p>
               <ThemePicker value={props.theme} skin={props.skin} onChange={props.onThemeChange} />
@@ -287,7 +287,7 @@ export function SettingsPage(props: SettingsPageProps) {
               <div className="settings-row">
                 <select id="settings-language" value={i18n.language} onChange={e => {
                   i18n.changeLanguage(e.target.value);
-                  localStorage.setItem('voxply_language', e.target.value);
+                  localStorage.setItem('wavvon_language', e.target.value);
                 }}>
                   <option value="en">English</option>
                   <option value="it">Italiano</option>
@@ -468,7 +468,7 @@ export function SettingsPage(props: SettingsPageProps) {
           <section>
             <h1>About</h1>
             <p className="muted">
-              Voxply — decentralized voice chat + community platform.
+              Wavvon — decentralized voice chat + community platform.
             </p>
           </section>
         )}

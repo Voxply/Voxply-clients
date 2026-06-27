@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { FocusTrap } from "@voxply/ui";
+﻿import { useEffect } from "react";
+import { FocusTrap } from "@wavvon/ui";
 
 export function Lightbox({
   src,

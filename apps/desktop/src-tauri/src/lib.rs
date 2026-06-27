@@ -1,4 +1,4 @@
-// Voxply desktop Tauri shell — composition root.
+﻿// Wavvon desktop Tauri shell — composition root.
 // All domain logic lives in the modules below. This file wires them together.
 
 mod admin;
@@ -53,12 +53,12 @@ pub fn run() {
             let update_handle = app.handle().clone();
             tauri::async_runtime::spawn(updater::check_for_updates(update_handle));
 
-            let show = MenuItem::with_id(app, "show", "Show Voxply", true, None::<&str>)?;
+            let show = MenuItem::with_id(app, "show", "Show Wavvon", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
 
             let _tray = TrayIconBuilder::with_id("main")
-                .tooltip("Voxply")
+                .tooltip("Wavvon")
                 .icon(app.default_window_icon().unwrap().clone())
                 .menu(&menu)
                 .on_menu_event(|app, event| match event.id.as_ref() {

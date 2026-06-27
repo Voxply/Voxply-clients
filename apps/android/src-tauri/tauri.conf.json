@@ -1,7 +1,7 @@
-{
-  "productName": "Voxply",
+﻿{
+  "productName": "Wavvon",
   "version": "0.1.0",
-  "identifier": "com.voxply.android",
+  "identifier": "com.wavvon.android",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5174",
@@ -27,7 +27,7 @@
     "deep-link": {
       "mobile": [
         {
-          "host": "voxply.io",
+          "host": "wavvon.io",
           "pathPrefix": ["/invite"]
         }
       ]

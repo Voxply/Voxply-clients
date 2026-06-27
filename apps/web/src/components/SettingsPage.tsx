@@ -1,11 +1,11 @@
-import React, { useState } from "react";
+﻿import React, { useState } from "react";
 import type { Hub, NamedProfile, NotifLevel, BlockEntry, IgnoreEntry } from "@shared/types";
 import { hubFetch, getNotifPref, setNotifPref } from "@platform";
 import { loadIdentity, seedToPhrase } from "@identity/index";
 import { SkinEditor, makeSeed } from "./SkinEditor";
 import { SkinsGallery } from "./SkinsGallery";
-import type { ThemeId, VoxplySkin } from "../skinValidation";
-import { BlockIgnoreSection } from "@voxply/ui";
+import type { ThemeId, WavvonSkin } from "../skinValidation";
+import { BlockIgnoreSection } from "@wavvon/ui";
 import { IdentityBackupSection } from "./IdentityBackupSection";
 
 export type SettingsTab = "profile" | "notifications" | "appearance" | "account";
@@ -20,8 +20,8 @@ interface SettingsPageProps {
   onCopyKey: () => void;
   theme: ThemeId;
   onThemeChange: (t: ThemeId) => void;
-  skin: VoxplySkin | null;
-  onSkinChange: (skin: VoxplySkin) => void;
+  skin: WavvonSkin | null;
+  onSkinChange: (skin: WavvonSkin) => void;
   profiles: NamedProfile[];
   defaultProfileId: string | null;
   mentionPingEnabled?: boolean;
@@ -33,7 +33,7 @@ interface SettingsPageProps {
   onUnblock: (pubkey: string) => void;
   onUnignore: (pubkey: string) => void;
   knownNames: Record<string, string | null>;
-  onImportSkin: (skin: VoxplySkin) => void;
+  onImportSkin: (skin: WavvonSkin) => void;
   onProfileSaved?: () => void;
 }
 
@@ -250,7 +250,7 @@ export function SettingsPage(props: SettingsPageProps) {
             <div className="settings-section">
               <label className="settings-label">Theme</label>
               <p className="muted" style={{ fontSize: "var(--text-sm)", marginBottom: 12 }}>
-                Choose how Voxply looks in your browser.
+                Choose how Wavvon looks in your browser.
               </p>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 {THEMES.map((t) => (

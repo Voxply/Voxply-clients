@@ -1,4 +1,4 @@
-import React, { useRef, useState } from "react";
+﻿import React, { useRef, useState } from "react";
 
 interface Props {
   onExportBackup: (passphrase: string, label: string) => Promise<string>;
@@ -53,7 +53,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
     if (!exportLink) return;
     const a = document.createElement("a");
     a.href = exportLink;
-    a.download = `voxply-identity-backup.voxply-backup`;
+    a.download = `wavvon-identity-backup.wavvon-backup`;
     a.click();
   }
 
@@ -158,7 +158,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
           <input
             ref={fileInputRef}
             type="file"
-            accept=".voxply-backup"
+            accept=".wavvon-backup"
             style={{ marginBottom: 6 }}
             onChange={(e) => setImportFile(e.target.files?.[0] ?? null)}
           />
@@ -176,7 +176,7 @@ export function IdentityBackupSection({ onExportBackup, onImportBackup }: Props)
           {importStatus === "conflict" && (
             <div className="import-conflict">
               <p className="muted">
-                This device already has a different Voxply identity.
+                This device already has a different Wavvon identity.
                 Replacing it means this device stops being that identity.
                 Make sure that identity is backed up first.
               </p>

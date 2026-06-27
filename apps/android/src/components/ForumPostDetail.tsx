@@ -1,7 +1,7 @@
-import React, { useEffect, useState } from "react";
+﻿import React, { useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { PostDetail, ReplyView } from "../types";
-import { formatRelative } from "@voxply/core";
+import { formatRelative } from "@wavvon/core";
 
 interface Props {
   postId: string;

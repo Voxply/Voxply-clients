@@ -1,6 +1,6 @@
-const SAVED_HUBS_KEY = "voxply:saved_hubs";
-const ACTIVE_HUB_KEY = "voxply:active_hub";
-const TOKEN_PREFIX = "voxply:token:";
+﻿const SAVED_HUBS_KEY = "wavvon:saved_hubs";
+const ACTIVE_HUB_KEY = "wavvon:active_hub";
+const TOKEN_PREFIX = "wavvon:token:";
 
 export interface SavedHub {
   hub_id: string;

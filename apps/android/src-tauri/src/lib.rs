@@ -1,4 +1,4 @@
-mod voice_cmd;
+﻿mod voice_cmd;
 use voice_cmd::VoiceState;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -21,5 +21,5 @@ pub fn run() {
             voice_cmd::mic_test_stop,
         ])
         .run(tauri::generate_context!())
-        .expect("error while running Voxply");
+        .expect("error while running Wavvon");
 }

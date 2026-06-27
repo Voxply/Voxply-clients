@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+﻿import React, { useState, useEffect } from "react";
 import { claimPairingOffer, isPaired } from "./pairing";
 
 export function PairingPanel({ onClose }: { onClose: () => void }) {
@@ -74,7 +74,7 @@ export function PairingPanel({ onClose }: { onClose: () => void }) {
           )}
           {status === "done" ? (
             <p style={{ color: "#3ba55c", fontSize: 13, fontWeight: 600 }}>
-              Paired! Restart Voxply to reconnect with your shared identity.
+              Paired! Restart Wavvon to reconnect with your shared identity.
             </p>
           ) : (
             <button

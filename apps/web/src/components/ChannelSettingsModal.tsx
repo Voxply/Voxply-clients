@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import { FocusTrap } from "@voxply/ui";
+﻿import React, { useState } from "react";
+import { FocusTrap } from "@wavvon/ui";
 import type { Channel } from "@shared/types";
 
 interface Props {

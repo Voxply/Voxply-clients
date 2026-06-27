@@ -1,6 +1,6 @@
-import React from "react";
+﻿import React from "react";
 import type { Channel, NotifyMode } from "../types";
-import { HoverSubmenu } from "@voxply/ui";
+import { HoverSubmenu } from "@wavvon/ui";
 
 interface Props {
   menu: { x: number; y: number; channel: Channel };

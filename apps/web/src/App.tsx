@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+﻿import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { useUnreadCounts } from "./hooks/useUnreadCounts";
 import { useNotificationPrefs } from "./hooks/useNotificationPrefs";
 import { useTypingIndicators } from "./hooks/useTypingIndicators";
@@ -8,8 +8,8 @@ import { useSettingsProfile } from "./hooks/useSettingsProfile";
 import { useFarmAdmin } from "./hooks/useFarmAdmin";
 import type { DragEndEvent } from "@dnd-kit/core";
 import { arrayMove } from "@dnd-kit/sortable";
-import { flattenTree, descendantIds, computeDepth, mentionsName, playMentionPing } from "@voxply/core";
-import { parseHubInput } from "@voxply/core";
+import { flattenTree, descendantIds, computeDepth, mentionsName, playMentionPing } from "@wavvon/core";
+import { parseHubInput } from "@wavvon/core";
 import type {
   Channel,
   Attachment,
@@ -35,7 +35,7 @@ import { CreateChannelModal } from "@components/CreateChannelModal";
 import { ChannelSettingsModal } from "@components/ChannelSettingsModal";
 import { FarmSettingsPage } from "@components/FarmSettingsPage";
 import { CreateHubWizard } from "@components/CreateHubWizard";
-import { KeyboardShortcuts } from "@voxply/ui";
+import { KeyboardShortcuts } from "@wavvon/ui";
 import { HubAdminPage } from "./components/HubAdminPage";
 import { SearchBar } from "@components/SearchBar";
 import { WelcomeScreenContainer } from "@components/WelcomeScreen";
@@ -43,8 +43,8 @@ import { SettingsPage } from "@components/SettingsPage";
 import { UserContextMenu } from "@components/UserContextMenu";
 import { MobileShell } from "@components/MobileShell";
 import { DiscoverPage } from "@components/DiscoverPage";
-import { buildChannelTree } from "@voxply/core";
-import type { TreeNode } from "@voxply/core";
+import { buildChannelTree } from "@wavvon/core";
+import type { TreeNode } from "@wavvon/core";
 import { saveDraft, loadDraft, clearDraft } from "./utils/drafts";
 import type { ScreenShareViewerRef } from "@components/ScreenShareViewer";
 import { listBotCommands, updateDmBlocks, fetchVoiceRoster, activeSession } from "@platform";
@@ -167,7 +167,7 @@ function IdentitySetupScreen({ onComplete }: { onComplete: () => void }) {
 
   return (
     <div style={{ maxWidth: 400, margin: "120px auto", padding: 32, textAlign: "center" }}>
-      <h1>Voxply</h1>
+      <h1>Wavvon</h1>
       <p className="muted">Create a new identity or recover an existing one.</p>
       <button className="btn-primary" style={{ width: "100%", marginBottom: 12 }} onClick={doGenerate}>
         Create new identity
@@ -284,7 +284,7 @@ export default function App() {
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
   const [ignoredUsers, setIgnoredUsers] = useState<Set<string>>(() => {
     try {
-      const raw = localStorage.getItem("voxply.ignoredUsers");
+      const raw = localStorage.getItem("wavvon.ignoredUsers");
       return raw ? new Set(JSON.parse(raw) as string[]) : new Set();
     } catch { return new Set(); }
   });
@@ -304,7 +304,7 @@ export default function App() {
       const next = new Set(prev);
       if (next.has(pubkey)) next.delete(pubkey);
       else next.add(pubkey);
-      try { localStorage.setItem("voxply.ignoredUsers", JSON.stringify(Array.from(next))); } catch {}
+      try { localStorage.setItem("wavvon.ignoredUsers", JSON.stringify(Array.from(next))); } catch {}
       return next;
     });
   }
@@ -410,7 +410,7 @@ export default function App() {
 
   useEffect(() => {
     const total = Object.values(unreadByHub).reduce((n, v) => n + v, 0);
-    document.title = total > 0 ? `(${total > 99 ? "99+" : total}) Voxply` : "Voxply";
+    document.title = total > 0 ? `(${total > 99 ? "99+" : total}) Wavvon` : "Wavvon";
   }, [unreadByHub]);
 
   // === WS handlers (stable via ref) ===
@@ -698,7 +698,7 @@ export default function App() {
         await loadHubData();
         publishDhKey().catch(() => {});
       }
-      const globalHomeHub = window.__VOXPLY_HOME_HUB__;
+      const globalHomeHub = window.__WAVVON_HOME_HUB__;
       if (typeof globalHomeHub === "string" && globalHomeHub.trim() && loadSavedHubs().length === 0) {
         setHomeHubUrl(globalHomeHub.trim());
       }
@@ -1405,7 +1405,7 @@ export default function App() {
             mentionPingEnabled={mentionPingEnabled}
             onMentionPingChange={(v) => {
               setMentionPingEnabled(v);
-              try { localStorage.setItem("voxply.mentionPing", v ? "1" : "0"); } catch {}
+              try { localStorage.setItem("wavvon.mentionPing", v ? "1" : "0"); } catch {}
             }}
             recoveryPhrase={recoveryPhrase}
             onShowRecovery={handleShowRecovery}

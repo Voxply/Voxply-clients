@@ -1,4 +1,4 @@
-// App.tsx — Root component
+﻿// App.tsx — Root component
 //
 // React concepts for Blazor devs:
 // - useState(initial) returns [value, setter] — private field + setter
@@ -45,20 +45,20 @@ import type {
 import { ScreenShareModal } from "./components/ScreenShareModal";
 import { ScreenShareOverlay } from "./components/ScreenShareOverlay";
 import { HubStreamsPanel } from "./components/HubStreamsPanel";
-import { KeyboardShortcuts } from "@voxply/ui";
+import { KeyboardShortcuts } from "@wavvon/ui";
 import { useVoice } from "./hooks/useVoice";
 import { useVideo } from "./hooks/useVideo";
 import { useWhisper } from "./hooks/useWhisper";
 import { VideoGrid } from "./components/VideoGrid";
-import { type ThemeId, type VoxplySkin, applySkinTokens, clearSkinTokens } from "./skinValidation";
+import { type ThemeId, type WavvonSkin, applySkinTokens, clearSkinTokens } from "./skinValidation";
 import {
   formatPubkey,
   buildChannelTree,
   flattenTree,
   descendantIds,
   computeDepth,
-} from "@voxply/core";
-import { parseHubInput } from "@voxply/core";
+} from "@wavvon/core";
+import { parseHubInput } from "@wavvon/core";
 import { saveDraft } from "./utils/drafts";
 import { useNotificationPrefs } from "./hooks/useNotificationPrefs";
 import { useUnreadCounts } from "./hooks/useUnreadCounts";
@@ -150,7 +150,7 @@ function App() {
     setChannelMode,
   } = useNotificationPrefs();
 
-  // Blocked users: pubkey set. Persisted to ~/.voxply/blocked_users.json so
+  // Blocked users: pubkey set. Persisted to ~/.wavvon/blocked_users.json so
   // the choice carries across sessions. Used to filter out their messages
   // from channel + DM views without involving any hub state.
   const [blockedUsers, setBlockedUsers] = useState<Set<string>>(new Set());
@@ -490,7 +490,7 @@ function App() {
   const [memberSidebarHidden, setMemberSidebarHiddenState] = useState<boolean>(
     () => {
       try {
-        return localStorage.getItem("voxply.memberSidebarHidden") === "1";
+        return localStorage.getItem("wavvon.memberSidebarHidden") === "1";
       } catch {
         return false;
       }
@@ -499,7 +499,7 @@ function App() {
   function setMemberSidebarHidden(v: boolean) {
     setMemberSidebarHiddenState(v);
     try {
-      localStorage.setItem("voxply.memberSidebarHidden", v ? "1" : "0");
+      localStorage.setItem("wavvon.memberSidebarHidden", v ? "1" : "0");
     } catch {}
   }
 
@@ -772,7 +772,7 @@ function App() {
   const [showHubBrowser, setShowHubBrowser] = useState(false);
   const [showWelcome, setShowWelcome] = useState<boolean>(() => {
     try {
-      return localStorage.getItem("voxply.seenWelcome") !== "1";
+      return localStorage.getItem("wavvon.seenWelcome") !== "1";
     } catch {
       return true;
     }
@@ -1019,7 +1019,7 @@ function App() {
     if (parsed?.inviteCode) setInviteCode(parsed.inviteCode);
   }
 
-  // On mount: check whether the app was launched via a voxply:// deep link,
+  // On mount: check whether the app was launched via a wavvon:// deep link,
   // and listen for deep links opened while the app is already running.
   useEffect(() => {
     invoke<string | null>("get_pending_deep_link").then((url) => {
@@ -1204,7 +1204,7 @@ function App() {
     (async () => {
       // Apply persisted theme/skin as early as possible to avoid a flash.
       try {
-        const appearance = await invoke<{ slot: string; skin?: VoxplySkin | null }>("load_appearance");
+        const appearance = await invoke<{ slot: string; skin?: WavvonSkin | null }>("load_appearance");
         if (appearance.slot === "custom" && appearance.skin) {
           const s = appearance.skin;
           setSkin(s);
@@ -1438,7 +1438,7 @@ function App() {
 
   function dismissWelcome() {
     try {
-      localStorage.setItem("voxply.seenWelcome", "1");
+      localStorage.setItem("wavvon.seenWelcome", "1");
     } catch {}
     setShowWelcome(false);
   }

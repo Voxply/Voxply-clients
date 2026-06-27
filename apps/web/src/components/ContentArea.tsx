@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
+﻿import React, { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import type {
   Channel,
@@ -29,7 +29,7 @@ import { ChannelMessageList } from "./content/ChannelMessageList";
 import { ChannelComposer } from "./content/ChannelComposer";
 import { PollComposer } from "./PollComposer";
 import { EventsPanel } from "./EventsPanel";
-import { AllianceView, ReconnectBanner } from "@voxply/ui";
+import { AllianceView, ReconnectBanner } from "@wavvon/ui";
 
 interface SelectedAllianceChannel {
   alliance_id: string;
@@ -191,7 +191,7 @@ export function ContentArea({
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(() => {
     if (!selectedChannel) return new Set();
     try {
-      const raw = localStorage.getItem(`voxply.threads.${selectedChannel.id}`);
+      const raw = localStorage.getItem(`wavvon.threads.${selectedChannel.id}`);
       return new Set(raw ? JSON.parse(raw) : []);
     } catch { return new Set(); }
   });
@@ -200,7 +200,7 @@ export function ContentArea({
   useEffect(() => {
     if (!selectedChannel) { setExpandedThreads(new Set()); return; }
     try {
-      const raw = localStorage.getItem(`voxply.threads.${selectedChannel.id}`);
+      const raw = localStorage.getItem(`wavvon.threads.${selectedChannel.id}`);
       setExpandedThreads(new Set(raw ? JSON.parse(raw) : []));
     } catch { setExpandedThreads(new Set()); }
     setThreadReplies({});
@@ -213,7 +213,7 @@ export function ContentArea({
 
   function persistExpandedThreads(next: Set<string>) {
     if (!selectedChannel) return;
-    localStorage.setItem(`voxply.threads.${selectedChannel.id}`, JSON.stringify([...next]));
+    localStorage.setItem(`wavvon.threads.${selectedChannel.id}`, JSON.stringify([...next]));
   }
 
   async function toggleThread(messageId: string) {

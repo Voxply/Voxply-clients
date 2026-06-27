@@ -1,8 +1,8 @@
-import React from "react";
+﻿import React from "react";
 import { useTranslation } from "react-i18next";
 import type { Message, User, RoleInfo, Hub, Poll } from "../../types";
 import { MessageRow } from "./MessageRow";
-import { TypingIndicator } from "@voxply/ui";
+import { TypingIndicator } from "@wavvon/ui";
 
 type TypingEntry = { name: string; ts: number };
 
