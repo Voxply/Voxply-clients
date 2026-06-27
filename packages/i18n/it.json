@@ -3,6 +3,8 @@
   "hub.add.button": "Aggiungi un hub",
   "hub.add.placeholder": "URL dell'hub",
   "hub.connecting": "Connessione in corso…",
+  "hub.reachable": "Hub raggiungibile — pronto per la connessione.",
+  "hub.invite_only_hint": "Solo su invito — incolla il link di invito completo",
   "hub.settings": "Impostazioni hub",
   "hub.invite_people": "Invita persone",
   "hub.create_channel": "Crea…",

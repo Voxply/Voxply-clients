@@ -48,34 +48,24 @@ export function AddHubModal({ hubUrl, onHubUrlChange, hubPreview, loading, error
         )}
         {hubPreview.state === "ok" && (
           <div className="hub-preview">
-            {hubPreview.icon ? (
-              <img src={hubPreview.icon} alt="" className="hub-preview-icon" />
-            ) : (
-              <div className="hub-preview-icon placeholder">
-                {hubPreview.name.slice(0, 2).toUpperCase()}
-              </div>
+            <p className="muted hub-preview-status" style={{ margin: 0 }}>
+              {t("hub.reachable")}
+            </p>
+            {hubPreview.invite_only && (
+              <p className="muted hub-preview-warn">
+                🔒 {t("hub.invite_only_hint")}
+              </p>
             )}
-            <div className="hub-preview-info">
-              <strong>{hubPreview.name}</strong>
-              {hubPreview.description && (
-                <p className="muted">{hubPreview.description}</p>
-              )}
-              {hubPreview.invite_only && (
-                <p className="muted hub-preview-warn">
-                  🔒 Invite-only — paste the full invite link to join
-                </p>
-              )}
-              {(hubPreview.min_security_level ?? 0) > 0 && (
-                <p className="muted hub-preview-warn">
-                  ⚙️ Proof-of-work required:{" "}
-                  {(hubPreview.min_security_level ?? 0) >= 20
-                    ? "High (~15 min)"
-                    : (hubPreview.min_security_level ?? 0) >= 15
-                    ? "Medium (~1 min)"
-                    : "Low (<1 sec)"}
-                </p>
-              )}
-            </div>
+            {(hubPreview.min_security_level ?? 0) > 0 && (
+              <p className="muted hub-preview-warn">
+                ⚙️ Proof-of-work required:{" "}
+                {(hubPreview.min_security_level ?? 0) >= 20
+                  ? "High (~15 min)"
+                  : (hubPreview.min_security_level ?? 0) >= 15
+                  ? "Medium (~1 min)"
+                  : "Low (<1 sec)"}
+              </p>
+            )}
           </div>
         )}
         <div className="modal-actions">
