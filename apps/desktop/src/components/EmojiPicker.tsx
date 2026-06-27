@@ -18,9 +18,11 @@ interface Props {
   onPick: (text: string) => void;
   /** The active hub URL, used to build absolute image paths for hub emojis. */
   hubUrl?: string;
+  /** Override class on the trigger button. Defaults to "reaction-add-btn". */
+  buttonClassName?: string;
 }
 
-export function EmojiPicker({ onPick, hubUrl }: Props) {
+export function EmojiPicker({ onPick, hubUrl, buttonClassName }: Props) {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [popupStyle, setPopupStyle] = useState<CSSProperties>({});
@@ -93,7 +95,7 @@ export function EmojiPicker({ onPick, hubUrl }: Props) {
     <div className="reaction-picker">
       <button
         ref={btnRef}
-        className="reaction-add-btn"
+        className={buttonClassName ?? "reaction-add-btn"}
         onClick={handleOpen}
         title={t("reaction.add")}
       >
