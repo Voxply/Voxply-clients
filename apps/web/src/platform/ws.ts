@@ -124,6 +124,8 @@ export class HubWebSocket {
       this.handlers.onPoll?.(tagged);
     } else if (type === "error") {
       this.handlers.onError?.(tagged);
+    } else if (type === "lagged") {
+      this.handlers.onChannelsUpdated?.(this.hub_id);
     } else if (type === "channels_updated") {
       this.handlers.onChannelsUpdated?.(this.hub_id);
     } else if (type === "member_online") {
