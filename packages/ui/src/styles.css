@@ -3900,17 +3900,17 @@ select:focus-visible {
 
 .reaction-picker-grid {
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  gap: 2px;
-  max-height: 200px;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  /* Clip at ~3.5 rows to hint that the grid scrolls */
+  max-height: 148px;
   overflow-y: auto;
   overflow-x: hidden;
 }
 
-
 .reaction-picker-recents {
   /* Show at most one row of recents (no scroll, no overflow) */
-  max-height: 36px;
+  max-height: 44px;
   overflow: hidden;
   scrollbar-gutter: auto;
 }
@@ -3940,13 +3940,13 @@ select:focus-visible {
   background: transparent;
   border: none;
   cursor: pointer;
-  font-size: var(--text-lg);
-  padding: 4px 6px;
+  font-size: 20px;
+  padding: 6px 8px;
   border-radius: var(--r-sm);
 }
 
 .reaction-picker-emoji:hover {
-  background: var(--bg-sunken);
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
 }
 
 /* ============================================================
