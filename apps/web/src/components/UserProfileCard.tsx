@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import type { UserProfile } from "../types";
 import { getUserProfile } from "@platform";
 import { formatRelative } from "@wavvon/core";
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export function UserProfileCard({ pubkey, onClose }: Props) {
+  const { t } = useTranslation();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -25,7 +27,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="User profile"
+      aria-label={t("user.profile.aria_label")}
     >
       <div
         className="modal-box"
@@ -35,7 +37,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
         <button
           className="modal-close"
           onClick={onClose}
-          aria-label="Close profile"
+          aria-label={t("user.profile.close")}
         >
           ×
         </button>
@@ -44,7 +46,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
 
         {!profile && !error && (
           <p className="muted" style={{ textAlign: "center", padding: 16 }}>
-            Loading…
+            {t("modal.loading")}
           </p>
         )}
 
@@ -54,7 +56,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
               <Avatar src={profile.avatar} name={profile.display_name ?? pubkey} size={48} />
               <div>
                 <div style={{ fontWeight: 600, fontSize: "var(--text-md)" }}>
-                  {profile.display_name ?? <span className="muted">No display name</span>}
+                  {profile.display_name ?? <span className="muted">{t("profile.no_display_name")}</span>}
                 </div>
                 <div
                   className="muted"
@@ -66,7 +68,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
             </div>
 
             <div style={{ fontSize: "var(--text-sm)", color: "var(--text-muted)" }}>
-              Joined {formatRelative(profile.joined_at)}
+              {t("user.profile.joined", { date: formatRelative(profile.joined_at) })}
             </div>
 
             {profile.roles.length > 0 && (
@@ -75,7 +77,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
                   className="muted"
                   style={{ fontSize: "var(--text-xs)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}
                 >
-                  Roles
+                  {t("user.profile.roles")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {profile.roles.map((r) => (
@@ -93,7 +95,7 @@ export function UserProfileCard({ pubkey, onClose }: Props) {
                   className="muted"
                   style={{ fontSize: "var(--text-xs)", textTransform: "uppercase", letterSpacing: ".05em", marginBottom: 4 }}
                 >
-                  Badges
+                  {t("user.profile.badges")}
                 </div>
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 4 }}>
                   {profile.badges.map((b, i) => (
