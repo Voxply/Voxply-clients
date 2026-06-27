@@ -6684,6 +6684,49 @@ a.embed-title:hover {
 .whisper-save-form button { padding: 4px 8px; border-radius: 3px; font-size: 12px; cursor: pointer; border: none; background: var(--accent-color, #5865f2); color: #fff; }
 .btn-icon-gear.whisper-active { background: #5865f24d; color: var(--accent-color, #5865f2); }
 .voice-btn-wrap { position: relative; }
+
+.voice-more-wrap {
+  position: relative;
+}
+
+.voice-more-menu {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  right: 0;
+  background: var(--bg-secondary, #2b2d31);
+  border: 1px solid var(--border);
+  border-radius: var(--r-md);
+  padding: var(--space-1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 160px;
+  z-index: 200;
+  box-shadow: var(--shadow-md, 0 4px 12px rgba(0,0,0,.4));
+}
+
+.voice-more-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--r-sm);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: var(--text-sm);
+  color: var(--text);
+  width: 100%;
+  text-align: left;
+}
+
+.voice-more-item:hover {
+  background: var(--bg-hover, rgba(255,255,255,0.06));
+}
+
+.voice-more-item.active {
+  color: var(--accent);
+}
 .participant-whisper-badge { font-size: 10px; font-weight: 600; color: #faa61a; margin-left: 4px; text-transform: uppercase; }
 
 .missions-panel { padding: 8px 0; }
