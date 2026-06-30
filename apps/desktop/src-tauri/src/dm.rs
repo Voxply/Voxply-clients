@@ -1184,7 +1184,7 @@ fn derive_nonce_dr(msg_key: &[u8; 32]) -> [u8; 12] {
 }
 
 /// Signing bytes for a DR v2 DM envelope.
-/// Tag: `b"wavvon/dr-dm/v2\0"`, followed by length-prefixed fields.
+/// Tag: `b"wavvon/dm-ciphertext/v2\0"` — matches `wavvon_identity::dr_envelope_signing_bytes`.
 pub(crate) fn dr_envelope_signing_bytes(
     conv_id: &str,
     message_index: u32,
@@ -1197,7 +1197,7 @@ pub(crate) fn dr_envelope_signing_bytes(
         out.extend_from_slice(&(b.len() as u32).to_le_bytes());
         out.extend_from_slice(b);
     }
-    let mut out = b"wavvon/dr-dm/v2\0".to_vec();
+    let mut out = b"wavvon/dm-ciphertext/v2\0".to_vec();
     len_prefixed(&mut out, conv_id);
     out.extend_from_slice(&message_index.to_le_bytes());
     out.extend_from_slice(&prev_count.to_le_bytes());
